@@ -480,42 +480,44 @@ class BoutiqueController extends AbstractController
                         $limgB[]
                             = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
                     }
-                    $boutiqueU =  [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
-                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                        'description' => $boutique->getDescription() ?? "Aucune",
-                        'titre' => $boutique->getTitre() ?? "Aucun",
-                        'status' => $boutique->isStatus(),
-                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
-                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                        'images' => $limgB,
-                        'localisation' =>  $boutique->getLocalisation() ? [
-                            'ville' =>
-                            $boutique->getLocalisation()->getVille(),
+                    if ($boutique->getUser()) {
+                        $boutiqueU =  [
+                            'codeBoutique' => $boutique->getCodeBoutique(),
+                            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                            'description' => $boutique->getDescription() ?? "Aucune",
+                            'titre' => $boutique->getTitre() ?? "Aucun",
+                            'status' => $boutique->isStatus(),
+                            'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
-                            'longitude' =>
-                            $boutique->getLocalisation()->getLongitude(),
-                            'latitude' =>
-                            $boutique->getLocalisation()->getLatitude(),
-                        ] : [
-                            'ville' =>
-                            'incertiane',
+                            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                            'images' => $limgB,
+                            'localisation' =>  $boutique->getLocalisation() ? [
+                                'ville' =>
+                                $boutique->getLocalisation()->getVille(),
 
-                            'longitude' =>
-                            0.0,
-                            'latitude' =>
-                            0.0,
-                        ]
-                        // 'produits' => $listProduit,
+                                'longitude' =>
+                                $boutique->getLocalisation()->getLongitude(),
+                                'latitude' =>
+                                $boutique->getLocalisation()->getLatitude(),
+                            ] : [
+                                'ville' =>
+                                'incertiane',
+
+                                'longitude' =>
+                                0.0,
+                                'latitude' =>
+                                0.0,
+                            ]
+                            // 'produits' => $listProduit,
 
 
-                    ];
-                    array_push($lB, $boutiqueU);
+                        ];
+                        array_push($lB, $boutiqueU);
+                    }
                 }
             }
-            // $listBoutiques = $serializer->serialize($lB, 'json');
-
+            
             return
                 new JsonResponse(
                     [
@@ -746,6 +748,7 @@ class BoutiqueController extends AbstractController
                         'description' => $boutique->getDescription(),
                         'titre' => $boutique->getTitre(),
                         'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
                         'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                         'produits' => $listProduit,
@@ -867,6 +870,7 @@ class BoutiqueController extends AbstractController
                         'prix' => $produit->getPrixUnitaire(),
                         'description' => $produit->getDescription(),
                         'status' => $produit->isStatus(),
+                        'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
                         'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
                         'description' => $produit->getDescription(),
                         'images' => $lsImgP
@@ -1072,8 +1076,7 @@ class BoutiqueController extends AbstractController
                             }
                         }
                     }
-                    // $listProduits = $serializer->serialize($lP, 'json');
-
+                
 
                 }
             }

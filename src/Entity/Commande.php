@@ -41,6 +41,9 @@ class Commande
     #[ORM\ManyToOne(targetEntity: Panier::class, inversedBy: "commandes")]
     private $panier;
 
+    // false => initialise et attente de validation du client .
+    //   true => Payement valide .
+     
     #[ORM\Column(type: "boolean")]
     private $statusBuy = false;
 

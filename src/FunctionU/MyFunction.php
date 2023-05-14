@@ -276,9 +276,9 @@ class MyFunction
             throw $th;
         }
     }
-    public function paid($data)
+    public function paid($data,  $montant, $idCom)
     {
-        $reponse = false;
+        $reponse = [];
         /**
          * request doit contenir 
          * si sourcePaiement 1 => compteLocal: [clientId,recepteurId,idLicence,routeId,quantite, montant Total de la transaction];
@@ -286,36 +286,26 @@ class MyFunction
          * quantiteSms , routeId, clientId,recepteurId,idLicence,  montant Total de la transaction]
          */
 
-        if ($data['idModePaiement'] == '1' || $data['idModePaiement'] == '2') {
-            $customer_state = $data['stateUser'];
-            $response = $this->client->request(
-                'POST',
-                'https://api-checkout.cinetpay.com/v2/payment',
-                [
-                    "json" => []
-                ]
-            );
+        if ($data['idModePaiement'] == '1' || $data['idModePaiement'] == '2' || $data['idModePaiement'] == 1 || $data['idModePaiement'] == 2) {
+            $dataRequest
+                =   [
+                    "email" => "hari.randoll@gmail.com",
+                    "phone" => $data['phone'],
+                    "name" => $data['nom'] . ' ' .  $data['nom'],
+                    "amount" => $montant,
+                    "currency" => "XAF",
+                    "reference" => $this->reference(),
+                    "description" => "Initialisation paiement entrant",
+                    "idCom" => $idCom
+                ];
+            $paymob =     $this->mobileBuy($dataRequest);
+            return $paymob;
         } else 
         if ($data['idModePaiement'] == '3') {
-
-
-
-
 
             try {
                 Stripe::setApiKey('sk_test_51MprWdFGCxqI1QzHZR3w2uP5G7oLhl58hXt4MDHqCUjywE1bdCP5YC4aqr0VVHilCTYmY7qohQfH4SyzvMD6bqKP00mxclsFcy');
 
-
-                // $token = Token::create([
-                //     'card' => [
-                //         'number' => $data['numCarte'],
-                //         'exp_month' =>  $data['exp_month'],
-                //         'exp_year' =>
-                //         $data['exp_year'],
-                //         'cvc' =>                         $data['cvv'],,
-
-                //     ],
-                // ]);
                 $token = Token::create([
                     'card' => [
                         'number' => '4242424242424242',
@@ -338,10 +328,9 @@ class MyFunction
                 }
                 return $reponse;
             } catch (Exception $e) {
-                $reponse = false;
+                $reponse = 0;
             }
         }
-        return $reponse;
     }
 
 
@@ -387,5 +376,79 @@ class MyFunction
         return
 
             count($notes) != 0 ?   $noteL / count($notes) : 0.0;
+    }
+
+
+    public function mobileBuy($data)
+    {
+        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+        $response = $this->client->request(
+            'POST',
+            'https://api.notchpay.co/payments/initialize',
+            [
+
+                'headers' => ['Accept' => 'application/json', 'Authorization' => $token],
+                "json" => $data
+            ]
+        );
+
+        $statusCodeInit = $response->getStatusCode();
+        if ($statusCodeInit == 201) {
+            if ($response->toArray()['code'] == 201) {
+                $commande = $this->em->getRepository(Commande::class)->findOneBy(['id' => $data['idCom']]);
+
+                $commande->setToken($response->toArray()["transaction"]['reference']);
+                $this->em->persist($commande);
+
+                $this->em->flush();
+
+                return
+                    $response->toArray()['authorization_url'];
+            } else {
+
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+
+
+    public function verifyBuy($reference)
+    {
+        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+        $response = $this->client->request(
+            'GET',
+            'https://api.notchpay.co/payments/' . $reference . '?currency=xaf',
+            [
+
+                'headers' => ['Content-Type' => 'application/json', 'Authorization' => $token],
+
+            ]
+        );
+
+        $statusCodeInit = $response->getStatusCode();
+        if ($statusCodeInit == 201) {
+            if ($response->toArray()['code'] == 201) {
+                return
+                    $response->toArray()["transaction"]['status'] == 'complet' &&   $response->toArray()["transaction"]['status'] != 'pending' &&   $response->toArray()["transaction"]['status'] != 'canceled';
+            } else {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+    }
+
+    public function reference()
+    {
+
+        $chaine = 'produit';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 31; ++$i) {
+            $chaine .= $listeCar[random_int(0, $max)];
+        }
+        return $chaine;
     }
 }

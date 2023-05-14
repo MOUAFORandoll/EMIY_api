@@ -24,7 +24,6 @@ use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -52,8 +51,6 @@ class CommandeController extends AbstractController
     private   $serializer;
     private $mailer;
     private $client;
-    private $jwt;
-    private $jwtRefresh;
     private $validator;
     private $myFuntion;
 
@@ -62,8 +59,7 @@ class CommandeController extends AbstractController
         EntityManagerInterface $em,
 
         HttpClientInterface $client,
-        JWTTokenManagerInterface $jwt,
-        RefreshTokenManagerInterface $jwtRefresh,
+
         ValidatorInterface $validator,
         MyFunction $myFuntion
     ) {
@@ -72,8 +68,7 @@ class CommandeController extends AbstractController
 
         $this->client = $client;
 
-        $this->jwt = $jwt;
-        $this->jwtRefresh = $jwtRefresh;
+
         $this->validator = $validator;
         $this->myFuntion = $myFuntion;
     }
@@ -131,7 +126,7 @@ class CommandeController extends AbstractController
         $data = $request->toArray();
         if (
             (empty($data['nom']) && empty($data['keySecret']))
-            || (empty($data['prenom']) && empty($data['keySecret']))
+
             || (empty($data['phone']) && empty($data['keySecret']))
             || empty($data['listProduits'])
             || empty($data['idModePaiement'])
@@ -238,40 +233,129 @@ class CommandeController extends AbstractController
         $commande->setCodeCommande($this->getUniqueCode());
         $commande->setCodeClient($this->getUniqueCode());
 
+        $commande->setStatusBuy(0);
 
-
-        $status =  $this->myFuntion->paid($data);
-        if ($status) {
-            $commande->setStatusBuy(1);
-        } else {
-            $commande->setStatusBuy(0);
-        }
         $this->em->persist($commande);
 
         $this->em->flush();
 
-        $dataPrint = [
-            'nom' =>
-            $nom . ' ' . $prenom,
-            'total'
-            =>    $total,
-            'date' =>  date_format($commande->getDateCreated(), 'Y-m-d H:i'),
-            'produits' =>  $produits
-        ];
-        $pdf = $this->GeneratePdf($dataPrint);
-        return new JsonResponse([
-            'message' => 'Commande effectuee',
-            'pdf' => $pdf,
-            'status' => true,
-            // 'a' =>  $panier->getListProduits(),
-            'id' =>  $commande->getId(),                                    'codeClient'
-            => $commande->getCodeClient(),
-            'codeCommande' =>  $commande->getCodeCommande(),
-            'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i')
+        $url =  $this->myFuntion->paid($data,  $total,  $commande->getId());
+        if ($url != 0) {
 
-        ], 200);
+
+
+            return new JsonResponse([
+                'message' => 'Confirmer votre paiement',
+
+                'url' =>  $url,
+                'status' => true,
+                // 'a' =>  $panier->getListProduits(),
+                'id' =>  $commande->getId(),
+                'codeClient'  => $commande->getCodeClient(),
+                'codeCommande' =>  $commande->getCodeCommande(),
+                'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i')
+
+            ], 201);
+        } else {
+            return new JsonResponse([
+                'message' => $url,
+                'status' => false,
+
+            ], 203);
+        }
     }
 
+
+    /**
+     * @Route("/commande/verify", name="verifyCommande", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    public function verifyCommande(Request $request)
+    {
+        /**
+         * request doit contenir  modePaiement, token,idListSmsAchete, quantite
+         */
+        $data = $request->toArray();
+
+        if (empty($data['id'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer veuillez contacter le developpeur'
+            ], 400);
+        }
+        $id = $data['id'];
+
+        $commande = $this->em->getRepository(Commande::class)->findOneBy(['id' => $id]);
+
+
+
+        if (
+
+            $commande
+        ) {
+            $statusCommande =   $this->myFuntion->verifyBuy($commande->getToken());
+            if ($statusCommande == true) {
+
+                $lpp      =
+                    $commande->getPanier()->getListProduitPaniers();
+                $produits = [];
+
+                $total = 0;
+
+                foreach ($lpp  as $prod) {
+                    $produit =
+                        $prod->getProduit();
+                    if ($produit) {
+
+                        $produits[] = [
+                            'nom' =>
+                            $produit->getTitre(),
+                            'quantite' => $prod->getQuantite(),
+                            'prix'
+                            => $produit->getPrixUnitaire() * $prod->getQuantite(),
+                        ];
+                        $total += $produit->getPrixUnitaire() * $prod->getQuantite();
+                    }
+                }
+
+                $dataPrint = [
+                    'nom' =>
+                    $commande->getPanier()->getNomClient(),
+                    'total'
+                    =>    $total,
+                    'date' =>  date_format($commande->getDateCreated(), 'Y-m-d H:i'),
+                    'produits' =>  $produits
+                ];
+                $pdf = $this->GeneratePdf($dataPrint);
+                $this->em->flush();
+                return new JsonResponse([
+                    'status'
+                    => true,
+                    'pdf' =>  $pdf,
+                    'message' => 'Achat Effectue ,Votre Livraison est en cours, veuillez patienter'
+                ], 200);
+            } else {
+
+                $this->em->flush();
+                return new JsonResponse([
+                    'status'
+                    => false,
+                    'message' => 'En attente de validation de votre part'
+                ], 200);
+            }
+        } else {
+            return new JsonResponse([
+                'status'
+                => false,
+                'message' => 'Une erreur est survenue'
+            ], 203);
+        }
+    }
 
 
     /**
@@ -1835,15 +1919,13 @@ class CommandeController extends AbstractController
                 }
             }
 
-            $listProduit = $serializer->serialize($lP, 'json');
-            // } else {
-            // }
+
 
             return
                 new JsonResponse([
                     'data'
                     =>
-                    JSON_DECODE($listProduit),
+                    $lP,
 
                 ], 200);
         } else {
@@ -1902,18 +1984,18 @@ class CommandeController extends AbstractController
                     foreach ($lCommande  as $cl) {
 
                         $commande =  [
-                            'id' => $cl->getId(),
-                            'phone' => $cl->getNumeroClient(),
-                            'prenom' => $cl->getPrenom(),
-                            'nom' => $cl->getNomClient(),
+                            // 'id' => $cl->getId(),
+                            // 'phone' => $cl->getNumeroClient(),
+                            // 'prenom' => $cl->getPrenom(),
+                            // 'nom' => $cl->getNomClient(),
 
-                            'boutique' => $cl->getPlace()->getVoyage()->getPointDeVente()->getBoutique()->getNom(),
-                            'pointDeVente' => $cl->getPlace()->getVoyage()->getPointDeVente()->getNomPointDeVente(),
-                            'typeCommande' => $cl->getPlace()->getVoyage()->getTypeVoyage()->getLibelle(),
+                            // 'boutique' => $cl->getPlace()->getVoyage()->getPointDeVente()->getBoutique()->getNom(),
+                            // 'pointDeVente' => $cl->getPlace()->getVoyage()->getPointDeVente()->getNomPointDeVente(),
+                            // 'typeCommande' => $cl->getPlace()->getVoyage()->getTypeVoyage()->getLibelle(),
 
-                            'numeroSiege' => $cl->getPlace()->getNumeroPlace(),
+                            // 'numeroSiege' => $cl->getPlace()->getNumeroPlace(),
 
-                            'date' => date_format($cl->getDateCreate(), 'Y-m-d H:i')
+                            // 'date' => date_format($cl->getDateCreate(), 'Y-m-d H:i')
                         ];
                         array_push($lB, $commande);
                     }
@@ -1995,7 +2077,33 @@ class CommandeController extends AbstractController
         ], 200);
     }
 
+    /**
+     * @Route("/pdf", name="Pdf", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    public function Pdf(Request $request)
+    {
 
+        $dataPrint = [
+            'nom' =>
+            'mOUAFO',
+            'total'
+            =>    150150,
+            'date' =>  date_format(new DateTime(), 'Y-m-d H:i'),
+            'produits' => ['']
+        ];
+        $pdf = $this->GeneratePdf($dataPrint);
+        return new JsonResponse([
+            'PDF' => $pdf
+
+        ], 200);
+    }
 
     public function GeneratePdf($data)
     {
