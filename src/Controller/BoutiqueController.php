@@ -517,7 +517,7 @@ class BoutiqueController extends AbstractController
                     }
                 }
             }
-            
+
             return
                 new JsonResponse(
                     [
@@ -1008,8 +1008,6 @@ class BoutiqueController extends AbstractController
         } else {
             return
                 new JsonResponse([
-                    'data'
-                    => [],
                     'message' => 'Aucune authorisation'
                 ], 203);
         }
@@ -1076,8 +1074,6 @@ class BoutiqueController extends AbstractController
                             }
                         }
                     }
-                
-
                 }
             }
         }

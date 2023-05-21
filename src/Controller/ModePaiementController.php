@@ -84,7 +84,7 @@ class ModePaiementController extends AbstractController
                     : ($mode->getId() == 2 ?
                         '/images/payement/momo.png'
                         : ($mode->getId() == 3 ?
-                            '/images/payement/paycard.png' : '')));
+                            '/images/payement/paycard.png' : '/images/payement/freecoin.png')));
 
             $modeF =  [
 

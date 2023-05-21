@@ -6,6 +6,7 @@ use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Commande;
 use App\Entity\Commission;
+use App\Entity\Compte;
 use App\Entity\HistoriquePaiement;
 use App\Entity\ListProduitPanier;
 use App\Entity\Localisation;
@@ -34,10 +35,12 @@ class MyFunction
 
     private $em;
     private $client;
-
+    private
+        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
     public function __construct(
         EntityManagerInterface $em,
-        HttpClientInterface $client
+        HttpClientInterface $client,
+
 
     ) {
         $this->client =
@@ -217,7 +220,7 @@ class MyFunction
             if ($boutique->getUser()) {
 
                 $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $boutique->getUser()]);
-                $compte->setSolde($montant);
+                $compte->setSolde($compte->getSolde() + $montant);
                 $this->em->persist(
                     $compte
                 );
@@ -237,7 +240,7 @@ class MyFunction
         if ($livreur) {
 
             $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $livreur]);
-            $compte->setSolde($montant);
+            $compte->setSolde($compte->getSolde() + $montant);
             $this->em->persist(
                 $compte
             );
@@ -272,6 +275,84 @@ class MyFunction
             );
             $this->em->flush();
             return true;
+        } catch (\Throwable $th) {
+            throw $th;
+        }
+    }
+    public function addFreeCoin($data)
+    {
+        try {
+            $transaction = new Transaction();
+            $transaction->setLibelle($data['libelle']);
+            $transaction->setMontant($data['montant']);
+            $transaction->setNomClient($data['nom'] ?? '');
+            $transaction->setPrenomClient($data['prenom'] ?? '');
+            $transaction->setNumeroClient($data['numeroClient'] ?? '');
+
+            $transaction->setStatus(false);
+            $transaction->setClient($data['client']);
+            $transaction->setTypeTransaction($data['typeTransaction']);
+
+            $transaction->setModePaiement($data['modePaiement']);
+
+            $dataRequest
+                =   [
+                    "email" => "hari.randoll@gmail.com",
+                    "phone" => $data['numeroClient'],
+                    "name" => $data['nom'],
+                    "amount" => $data['montant'],
+                    "currency" => "XAF",
+                    "reference" => $this->reference(),
+                    "description" => "Initialisation paiement pourrecharge compte",
+
+                ];
+            $response = $this->client->request(
+                'POST',
+                'https://api.notchpay.co/payments/initialize',
+                [
+
+                    'headers' => ['Accept' => 'application/json', 'Authorization' => $this->token],
+                    "json" => $dataRequest
+                ]
+            );
+
+            $statusCodeInit = $response->getStatusCode();
+            if ($statusCodeInit == 201) {
+                if ($response->toArray()['code'] == 201) {
+
+                    $transaction->setToken($response->toArray()["transaction"]['reference']);
+
+                    $this->em->persist(
+                        $transaction
+                    );
+                    $this->em->flush();
+
+                    return new JsonResponse(
+                        [
+                            'token' => $response->toArray()["transaction"]['reference'], 'message' => 'Confirmer votre paiement',
+
+                            'url' =>  $response->toArray()['authorization_url'],
+
+
+                        ],
+                        201
+                    );
+                } else {
+
+                    return new JsonResponse([
+                        'message' => 'Une erreur est survenue, reessayer',
+                        'status' => false,
+
+                    ], 203);
+                }
+            } else {
+                return new JsonResponse([
+                    'message' => 'Une erreur est survenue, reessayer ',
+                    'data' => $response->toArray(),
+                    'status' => false,
+
+                ], 203);
+            }
         } catch (\Throwable $th) {
             throw $th;
         }
@@ -330,6 +411,20 @@ class MyFunction
             } catch (Exception $e) {
                 $reponse = 0;
             }
+        } else  if ($data['idModePaiement'] == '4' || $data['idModePaiement'] == 4) {
+            $dataRequest
+                =   [
+                    "email" => "hari.randoll@gmail.com",
+                    "phone" => $data['phone'],
+                    "name" => $data['nom'] . ' ' .  $data['nom'],
+                    "amount" => $montant,
+                    "currency" => "XAF",
+                    "reference" => $this->reference(),
+                    "description" => "Initialisation paiement entrant",
+                    "idCom" => $idCom
+                ];
+            $paymob =     $this->systemBuy($dataRequest);
+            return $paymob;
         }
     }
 
@@ -379,15 +474,71 @@ class MyFunction
     }
 
 
+    public function systemBuy($data)
+    {
+        $commande = $this->em->getRepository(Commande::class)->findOneBy(['id' => $data['idCom']]);
+        $user =
+            $commande->getPanier()->getUser();
+        if ($user) {
+            $compte = $user->getComptes()[0];
+            if ($compte->getSolde() >= $data['amount']) {
+                $compteU = $this->em->getRepository(Compte::class)->findOneBy(['id' =>  $compte->getId()]);
+
+                $compteU->setSolde(
+                    $compteU->getSolde() - $data['amount']
+                );
+
+                $commande->setToken('System');
+                $commande->setStatusBuy(true);
+                $this->em->persist($commande);
+                $this->em->persist($compteU);
+
+
+
+
+
+
+
+                $this->em->flush();
+
+                return new JsonResponse(
+                    [
+                        'message' => 'Achat effectue',
+                        'status' => true,
+                        'finish' => true,
+                        'id' =>  $commande->getId(),
+                        'codeClient'  => $commande->getCodeClient(),
+                        'codeCommande' =>  $commande->getCodeCommande(),
+                        'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i')
+
+                    ],
+                    201
+                );
+            } else {
+                return new JsonResponse([
+                    'message' => 'Solde inssufisant,recharger puis reessayer',
+                    'status' => false,
+
+                ], 203);
+            };
+        } else {
+            return new JsonResponse([
+                'message' => 'Vous devez avoir un compte pour effectuer cette action',
+                'status' => false,
+
+            ], 203);
+        }
+    }
+
     public function mobileBuy($data)
     {
-        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+
         $response = $this->client->request(
             'POST',
             'https://api.notchpay.co/payments/initialize',
             [
 
-                'headers' => ['Accept' => 'application/json', 'Authorization' => $token],
+                'headers' => ['Accept' => 'application/json', 'Authorization' => $this->token],
                 "json" => $data
             ]
         );
@@ -401,37 +552,58 @@ class MyFunction
                 $this->em->persist($commande);
 
                 $this->em->flush();
+                return new JsonResponse(
+                    [
+                        'message' => 'Confirmer votre paiement',
 
-                return
-                    $response->toArray()['authorization_url'];
+                        'url' =>  $response->toArray()['authorization_url'],
+                        'status' => true,
+                        'finish' => false,
+                        // 'a' =>  $panier->getListProduits(),
+                        'id' =>  $commande->getId(),
+                        'codeClient'  => $commande->getCodeClient(),
+                        'codeCommande' =>  $commande->getCodeCommande(),
+                        'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i')
+
+                    ],
+                    201
+                );
             } else {
 
-                return 0;
+                return new JsonResponse([
+                    'message' => 'Une erreur est survenue, reessayer',
+                    'status' => false,
+
+                ], 203);
             }
         } else {
-            return 0;
+            return new JsonResponse([
+                'message' => 'Une erreur est survenue, reessayer',
+
+                'status' => false,
+
+            ], 203);
         }
     }
 
 
     public function verifyBuy($reference)
     {
-        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+
         $response = $this->client->request(
             'GET',
             'https://api.notchpay.co/payments/' . $reference . '?currency=xaf',
             [
 
-                'headers' => ['Content-Type' => 'application/json', 'Authorization' => $token],
+                'headers' => ['Content-Type' => 'application/json', 'Authorization' => $this->token],
 
             ]
         );
-
         $statusCodeInit = $response->getStatusCode();
-        if ($statusCodeInit == 201) {
-            if ($response->toArray()['code'] == 201) {
+        if ($statusCodeInit == 200) {
+            if ($response->toArray()['code'] == 200) {
                 return
-                    $response->toArray()["transaction"]['status'] == 'complet' &&   $response->toArray()["transaction"]['status'] != 'pending' &&   $response->toArray()["transaction"]['status'] != 'canceled';
+                    $response->toArray()["transaction"]['status'] == 'complete';
             } else {
                 return 0;
             }

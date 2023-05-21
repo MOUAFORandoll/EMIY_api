@@ -24,7 +24,6 @@ use Symfony\Component\Serializer\Annotation\Groups;
 
 
 #[ORM\Entity(repositoryClass: UserPlateformRepository::class)]
-#[ORM\Table(name: "`UserPlateform`")]
 #[ApiResource(
     itemOperations: [
         'get' => [],

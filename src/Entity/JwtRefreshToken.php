@@ -14,9 +14,8 @@ use Gesdinet\JWTRefreshTokenBundle\Entity\RefreshToken as BaseRefreshToken;
 /**
  * This class extends Gesdinet\JWTRefreshTokenBundle\Entity\RefreshToken to have another table name.
  *
- * #[ORM\Table(name: "jwt_refresh_token")]
- * #[ORM\Entity(repositoryClass: JwtRefreshTokenRepository::class)]
- */
+ * */
+#[ORM\Entity(repositoryClass: JwtRefreshTokenRepository::class)]
 class JwtRefreshToken extends BaseRefreshToken
 {
     #[ORM\Column(type: "datetime", nullable: true)]

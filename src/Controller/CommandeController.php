@@ -158,7 +158,7 @@ class CommandeController extends AbstractController
         // }
 
         $nom = $data['nom'] ??   $client->getNom();
-        $prenom = $data['prenom'] ??   $client->getPrenom();
+        $prenom = '';
         $phone = $data['phone'] ?? $client->getPhone();
 
         $modePaiement
@@ -239,30 +239,7 @@ class CommandeController extends AbstractController
 
         $this->em->flush();
 
-        $url =  $this->myFuntion->paid($data,  $total,  $commande->getId());
-        if ($url != 0) {
-
-
-
-            return new JsonResponse([
-                'message' => 'Confirmer votre paiement',
-
-                'url' =>  $url,
-                'status' => true,
-                // 'a' =>  $panier->getListProduits(),
-                'id' =>  $commande->getId(),
-                'codeClient'  => $commande->getCodeClient(),
-                'codeCommande' =>  $commande->getCodeCommande(),
-                'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i')
-
-            ], 201);
-        } else {
-            return new JsonResponse([
-                'message' => $url,
-                'status' => false,
-
-            ], 203);
-        }
+        return $this->myFuntion->paid($data,  $total,  $commande->getId());
     }
 
 
@@ -332,13 +309,27 @@ class CommandeController extends AbstractController
                     'produits' =>  $produits
                 ];
                 $pdf = $this->GeneratePdf($dataPrint);
+
+                $commande->setStatusBuy(true);
+
+                $this->em->persist($commande);
+
+
+
+
+
+
                 $this->em->flush();
                 return new JsonResponse([
                     'status'
                     => true,
                     'pdf' =>  $pdf,
+                    'id' =>  $commande->getId(),
+                    'codeClient'  => $commande->getCodeClient(),
+                    'codeCommande' =>  $commande->getCodeCommande(),
+                    'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i'),
                     'message' => 'Achat Effectue ,Votre Livraison est en cours, veuillez patienter'
-                ], 200);
+                ], 201);
             } else {
 
                 $this->em->flush();
@@ -532,14 +523,14 @@ class CommandeController extends AbstractController
         $commande->setCodeClient($this->getUniqueCode());
 
 
-
+        $commande->setStatusBuy(1);
 
         $this->em->persist($commande);
 
 
 
 
-        $commande->setStatusBuy(1);
+
 
         $this->em->flush();
 
@@ -551,91 +542,6 @@ class CommandeController extends AbstractController
         ], 200);
     }
 
-
-    /**
-     * @Route("/commande/notify", name="notifyCommande", methods={"POST", "GET"})
-     * @param Request $request
-     * @return JsonResponse
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
-     */
-    public function notifyCommandeIndex(Request $request)
-    {
-        /**
-         * request doit contenir  modePaiement, token,idListSmsAchete, quantite
-         */
-        $data = $request->toArray();
-
-        if (empty($data['token']) || empty($data['idLivreur']) || empty($data['idCommande'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayerveuillez contacter le developpeur'
-            ], 400);
-        }
-        $token = $data['token'];
-
-        $commande = $this->em->getRepository(Commande::class)->findOneBy(['token' => $token]);
-
-
-
-
-
-        $modeP
-            =
-            $commande->getModePaiement();
-        $siteId =
-            $modeP->getSiteId();
-
-
-        $apikey = "27139936162a84bbe3f5ad5.24286892";
-
-        #----------- Verification de la transaction -------------------#
-        $dataVerif = [
-            "apikey" => $apikey,
-            "site_id" => $siteId,
-            "token" => $token
-        ];
-        dd($dataVerif);
-        $response = $this->client->request(
-            'POST',
-            'https://api-checkout.cinetpay.com/v2/payment/check',
-            [
-                'json' => $dataVerif
-            ]
-        );
-
-        $statusCode = $response->getStatusCode();
-        $content = $response->toArray();
-
-        $livreur = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => $data['idLivreur']]);
-
-        if (
-            $content["code"]  === "00" &&
-            $statusCode == 200
-        ) {
-
-
-
-            $lcl =                new ListCommandeLivreur();
-
-            $lcl->setCommande($commande);
-            $lcl->setLivreur($livreur);
-
-            $this->em->persist($lcl);
-
-            $commande->setStatusBuy(1);
-
-
-            $this->em->flush();
-            return new JsonResponse([
-                'data'
-                => [],
-                'message' => 'Achat Effectue ,Votre Livraison est en cours, veuillez patienter'
-            ], 200);
-        }
-    }
 
 
     /**
@@ -2098,7 +2004,7 @@ class CommandeController extends AbstractController
             'date' =>  date_format(new DateTime(), 'Y-m-d H:i'),
             'produits' => ['']
         ];
-        $pdf = $this->GeneratePdf($dataPrint);
+        $pdf = $this->myFuntion->verifyBuy('CXOCWmCmeOrL7P1bIbsvVszSLFgrx5Nx');
         return new JsonResponse([
             'PDF' => $pdf
 

@@ -27,7 +27,7 @@ class Transaction
     #[ORM\Column(type: "string", length: 255)]
     private $token;
 
-    #[ORM\Column(type: "date")]
+    #[ORM\Column(type: "datetime")]
     private $dateCreate;
 
     #[ORM\Column(type: "boolean")]

@@ -105,7 +105,7 @@ class TransactionController extends AbstractController
         $data = $request->toArray();
         $possible = false;
 
-       
+
 
 
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => $data['id']]);
@@ -170,7 +170,7 @@ class TransactionController extends AbstractController
         $data = $request->toArray();
         $possible = false;
 
-      
+
         if (empty($data['keySecret'])) {
             return new JsonResponse([
                 'message' => 'Veuillez renseigner tous les champs'
@@ -267,6 +267,197 @@ class TransactionController extends AbstractController
                     ],
                     203
                 );
+        }
+    }
+
+
+
+    /**
+     * @Route("/compte/credit", name="compteCredit", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function compteCredit(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
+
+
+
+        if (empty($data['keySecret'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez renseigner tous les champs'
+
+            ], 203);
+        }
+        if (empty($data['montant'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez renseigner un montant'
+
+            ], 203);
+        }
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+
+
+        if (!$user) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation'
+
+            ], 203);
+        }
+        $montant
+            = $data['montant'];
+
+
+
+        $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
+
+        if (!$compte) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+
+        $tyPeT
+            = $this->em->getRepository(TypeTransaction::class)->findOneBy(['id' => 3]);
+        if (!$tyPeT) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+
+        $modePaiement
+            = $this->em->getRepository(ModePaiement::class)->findOneBy(['id' => $data['idModePaiement']]);
+
+
+        if (!$modePaiement) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+        $transaction = [
+            'libelle' => $tyPeT->getLibelle(),
+            'montant' => $montant,
+            "email" => "hari.randoll@gmail.com",
+
+            'nom' => $user->getNom(),
+            // 'image' => 'image',
+            'prenom' => $user->getPrenom(),
+            'numeroClient' => $data['phone'] ?? $user->getPhone(),
+
+            'typeTransaction' => $tyPeT,
+            'client' =>   $user,
+            'modePaiement' => $modePaiement
+        ];
+        $transactionE =  $this->myFunction->addFreeCoin($transaction);
+
+        return $transactionE;
+    }
+
+
+    /**
+     * @Route("/compte/credit/verify", name="verifyCreditCompte", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    public function verifyCreditCompte(Request $request)
+    {
+        /**
+         * request doit contenir  modePaiement, token,idListSmsAchete, quantite
+         */
+        $data = $request->toArray();
+
+        if (empty($data['token'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer veuillez contacter le developpeur'
+            ], 400);
+        }
+        $token = $data['token'];
+
+        $transaction = $this->em->getRepository(Transaction::class)->findOneBy(['token' => $token]);
+
+
+
+        if (
+
+            $transaction
+        ) {
+            $statusTransaction =
+                $this->myFunction->verifyBuy($transaction->getToken());
+            $user =
+                $transaction->getClient();
+            if ($user) {
+                if ($statusTransaction && !$transaction->isStatus()) {
+
+
+
+                    $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' =>  $user]);
+                    $compte->setSolde($compte->getSolde() + $transaction->getMontant());
+                    $transaction->setStatus(true);
+                    $this->em->persist(
+                        $transaction
+                    );
+                    $this->em->persist(
+                        $compte
+                    );
+
+                    $this->em->flush();
+                    return new JsonResponse([
+                        'status'
+                        => true,
+
+                        'message' => 'Recharge Effectue'
+                    ], 201);
+                } else {
+                    return new JsonResponse([
+                        'status'
+                        => false,
+                        'message' => 'En attente de validation de votre part'
+                    ], 203);
+                }
+            } else {
+
+
+                return new JsonResponse(
+                    [
+                        'status'
+                        => false,
+
+                    ],
+                    400
+                );
+            }
+        } else {
+
+
+            return new JsonResponse(
+                [
+                    'status'
+                    => false,
+
+                ],
+                400
+            );
         }
     }
 }
