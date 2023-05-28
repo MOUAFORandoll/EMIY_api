@@ -138,7 +138,8 @@ class BoutiqueController extends AbstractController
      */
     public function boutiqueUserNew(Request $request, SluggerInterface $slugger)
     {
-        $data = [
+        $this->em->beginTransaction();
+        try {  $data = [
             'keySecret' => $request->get('keySecret'),
 
             'description' => $request->get('description'),
@@ -243,18 +244,13 @@ class BoutiqueController extends AbstractController
 
             ], 203);
         }
-
-        // if (!$boutique1) {
-        //     return new JsonResponse([
-        //         'message' => 'Vous possedez deja une boutique'
-
-        //     ], 203);
-        // } else {
-        //     return new JsonResponse([
-        //         'message' => 'Ce nom de boutique est deja utilise'
-
-        //     ], 203);
-        // }
+        } catch (\Exception $e) {
+            // Une erreur s'est produite, annulez la transaction
+            $this->em->rollback();
+            return new JsonResponse([
+                'message' => 'Une erreur est survenue'
+            ], 203);
+        }
     }
 
 

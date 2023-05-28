@@ -321,8 +321,8 @@ class ProduitController extends AbstractController
     }
 
 
-    /**
-     * @Route("/produit/read/client", name="produitReadclient", methods={"GET"})
+    /** 
+     * @Route("/produit/read/client/{index}", name="produitReadclient", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -337,46 +337,44 @@ class ProduitController extends AbstractController
      * 
      * 
      */
-    public function produitReadclient(Request $request)
+    public function produitReadclient($index)
     {
 
-        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        // $data = $request->toArray(); 
-        $possible = false;
-
-
-
-
+        $pagination = 10;
         $lProduit = $this->em->getRepository(Produit::class)->findAll();
-
+        $lP = [];
         if ($lProduit) {
+            for ($i = 1; $i < (count($lProduit) < $pagination ? count($lProduit) : $pagination); $i++) {
+                $indexP = $index +
+                    $i;
+                if (isset($lProduit[$indexP])) {
+                    $produit = $lProduit[$indexP];
 
-            $lP = [];
-            foreach ($lProduit  as $produit) {
-                if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                    $lsImgP = [];
-                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    foreach ($lProduitO  as $produit0) {
-                        $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                    if ($produit->isStatus() && $produit->getQuantite() > 0) {
+                        $lsImgP = [];
+                        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                        foreach ($lProduitO  as $produit0) {
+                            $lsImgP[]
+                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                        }
+
+
+
+                        $produitU =  [
+                            'id' => $produit->getId(),
+                            'codeProduit' => $produit->getCodeProduit(),
+                            'boutique' => $produit->getBoutique()->getTitre(),
+                            'description' => $produit->getDescription(),
+                            'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
+                            'quantite' => $produit->getQuantite(),
+                            'prix' => $produit->getPrixUnitaire(),
+                            'status' => $produit->isStatus(),
+                            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                            'images' => $lsImgP
+
+                        ];
+                        array_push($lP, $produitU);
                     }
-
-
-
-                    $produitU =  [
-                        'id' => $produit->getId(),
-                        'codeProduit' => $produit->getCodeProduit(),
-                        'boutique' => $produit->getBoutique()->getTitre(),
-                        'description' => $produit->getDescription(),
-                        'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
-                        'quantite' => $produit->getQuantite(),
-                        'prix' => $produit->getPrixUnitaire(),
-                        'status' => $produit->isStatus(),
-                        // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                        'images' => $lsImgP
-
-                    ];
-                    array_push($lP, $produitU);
                 }
             }
             // $listProduits = $serializer->serialize($lP, 'json');
@@ -403,7 +401,7 @@ class ProduitController extends AbstractController
     }
 
     /**
-     * @Route("/produit/read/popular", name="produitReadPopular", methods={"GET"})
+     * @Route("/produit/read/popular/{index}", name="produitReadPopular", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -418,22 +416,51 @@ class ProduitController extends AbstractController
      * 
      * 
      */
-    public function produitReadPopular(Request $request)
+    public function produitReadPopular($index)
     {
-
-        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        // $data = $request->toArray(); 
-        $possible = false;
-
-
 
 
         $lProduit = $this->em->getRepository(Produit::class)->findAll();
-
+        $lP = [];
         if ($lProduit) {
+            for ($i = 0; $i < 10; $i++) {
+                $indexP = $index +
+                    $i;
+                if ($indexP < count($lProduit)) {
+                    $produit = $lProduit[$indexP];
 
-            $lP = [];
-            foreach ($lProduit  as $produit) {
+                    if ($produit->isStatus() && $produit->getQuantite() > 0) {
+                        $lsImgP = [];
+                        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                        foreach ($lProduitO  as $produit0) {
+                            $lsImgP[]
+                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                        }
+
+
+
+                        $produitU =  [
+                            'id' => $produit->getId(),
+                            'note' => $this->myFunction->noteProduit($produit->getId()),
+                            'codeProduit' => $produit->getCodeProduit(),
+                            'boutique' => $produit->getBoutique()->getTitre(),
+                            'description' => $produit->getDescription(),
+                            'titre' => $produit->getTitre(),
+                            'quantite' => $produit->getQuantite(),
+                            'prix' => $produit->getPrixUnitaire(),
+                            'status' => $produit->isStatus(),
+                            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                            'images' => $lsImgP
+
+                        ];
+                        array_push($lP, $produitU);
+                    }
+                }
+            }
+            if (count($lP) % 2 != 0) {
+                $indexP  = 0;
+                $produit = $lProduit[$indexP];
+
                 if ($produit->isStatus() && $produit->getQuantite() > 0) {
                     $lsImgP = [];
                     $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
@@ -458,9 +485,7 @@ class ProduitController extends AbstractController
                         'images' => $lsImgP
 
                     ];
-                    if (count($lP) < 10) {
-                        array_push($lP, $produitU);
-                    }
+                    array_push($lP, $produitU);
                 }
             }
             // $listProduits = $serializer->serialize($lP, 'json');
@@ -1089,7 +1114,7 @@ class ProduitController extends AbstractController
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
 
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['id' => $data['idBoutique']]);
-      
+
 
         $imagePresent = false;
 
@@ -1100,7 +1125,7 @@ class ProduitController extends AbstractController
             $produit->setQuantite($data['quantite'] ?? 1000);
             $produit->setPrixUnitaire($data['prixUnitaire'] ?? 1);
             $produit->setBoutique($boutique);
-        
+
             $produit->setCodeProduit($this->getUniqueCodeProduit());
 
             for ($i = 0; $i < 5; $i++) {

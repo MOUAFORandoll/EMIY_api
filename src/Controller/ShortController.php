@@ -55,7 +55,7 @@ class ShortController extends AbstractController
     }
 
     /**
-     * @Route("/short/read", name="ShortRead", methods={"GET"})
+     * @Route("/short/read/{index}", name="ShortRead", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -70,48 +70,91 @@ class ShortController extends AbstractController
      * 
      * 
      */
-    public function ShortRead(Request $request)
+    public function ShortRead($index)
     {
 
-        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $pagination = 10;
 
-        $possible = false;
 
-         
 
         $lShortF = [];
 
         $lShort = $this->em->getRepository(Short::class)->findAll();
-        foreach ($lShort as $short) {
-            $boutique = $short->getBoutique();
-            if ($boutique) {
-                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                $limgB = [];
 
-                foreach ($lBo  as $bo) {
-                    $limgB[]
-                        =  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc();
+        for ($i = 1; $i < (count($lShort) < $pagination ? count($lShort) : $pagination); $i++) {
+            $indexP = $index +
+                $i;
+            if (isset($lShort[$indexP])) {
+                $short = $lShort[$indexP];
+
+                $boutique = $short->getBoutique();
+
+                if ($boutique) {
+
+
+
+                    if ($boutique->isStatus()) {
+                        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                        $limgB = [];
+
+                        foreach ($lBo  as $bo) {
+                            $limgB[]
+                                = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                        }
+                        if (empty($limgB)) {
+                            $limgB[]
+                                = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                        }
+                        $boutiqueU =  [
+                            'codeBoutique' => $boutique->getCodeBoutique(),
+                            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                            'description' => $boutique->getDescription() ?? "Aucune",
+                            'titre' => $boutique->getTitre() ?? "Aucun",
+                            'status' => $boutique->isStatus(),
+                            'note' => $this->myFunction->noteBoutique($boutique->getId()),
+
+                            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                            'images' => $limgB,
+                            'localisation' =>  $boutique->getLocalisation() ? [
+                                'ville' =>
+                                $boutique->getLocalisation()->getVille(),
+
+                                'longitude' =>
+                                $boutique->getLocalisation()->getLongitude(),
+                                'latitude' =>
+                                $boutique->getLocalisation()->getLatitude(),
+                            ] : [
+                                'ville' =>
+                                'incertiane',
+
+                                'longitude' =>
+                                0.0,
+                                'latitude' =>
+                                0.0,
+                            ]
+                        ];
+                    }
+
+
+
+
+                    $shortF =  [
+
+                        'id' => $short->getId(),
+                        'titre' => $short->getTitre() ?? "Aucun",
+                        'description' => $short->getDescription() ?? "Aucun",
+                        'status' => $short->isStatus(),
+                        'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
+                        'date' =>
+                        date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                        'boutique' =>  $boutiqueU
+
+
+
+
+                    ];
+                    array_push($lShortF, $shortF);
                 }
-                if (empty($limgB)) {
-                    $limgB[] =     /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png';
-                }
-
-                $shortF =  [
-
-                    'id' => $short->getId(),
-                    'titre' => $short->getTitre() ?? "Aucun",
-                    'description' => $short->getDescription() ?? "Aucun",
-                    'status' => $short->isStatus(),
-                    'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
-                    'date' =>
-                    date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                    'srcBoutique' =>   $limgB[count($limgB) - 1]
-
-
-
-
-                ];
-                array_push($lShortF, $shortF);
             }
         }
 
@@ -150,7 +193,7 @@ class ShortController extends AbstractController
 
         $possible = false;
 
-         
+
 
         $lShortF = [];
         $data = $request->toArray();
@@ -217,12 +260,13 @@ class ShortController extends AbstractController
     public function ShortNew(Request $request, SluggerInterface $slugger)
     {
 
-
+        $this->em->beginTransaction();
+        try {
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
         $possible = false;
 
-       
+
 
 
         $data = [
@@ -303,6 +347,13 @@ class ShortController extends AbstractController
                 ],
                 200
             );
+    }  catch (\Exception $e) {
+            // Une erreur s'est produite, annulez la transaction
+            $this->em->rollback();
+            return new JsonResponse([
+                'message' => 'Une erreur est survenue'
+            ], 203);
+        }
     }
 }
 /****

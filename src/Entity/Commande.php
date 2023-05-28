@@ -64,6 +64,9 @@ class Commande
 
     #[ORM\ManyToOne(targetEntity: Localisation::class, inversedBy: "commandes")]
     private $localisation;
+
+    #[ORM\ManyToOne(inversedBy: 'commandes')]
+    private ?PointLivraison $point_livraison = null;
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
@@ -266,6 +269,18 @@ class Commande
     public function setLocalisation(?Localisation $localisation): self
     {
         $this->localisation = $localisation;
+
+        return $this;
+    }
+
+    public function getPointLivraison(): ?PointLivraison
+    {
+        return $this->point_livraison;
+    }
+
+    public function setPointLivraison(?PointLivraison $point_livraison): self
+    {
+        $this->point_livraison = $point_livraison;
 
         return $this;
     }

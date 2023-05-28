@@ -32,8 +32,8 @@ class Category
     #[ORM\OneToMany(targetEntity: Boutique::class, mappedBy: "category")]
     private $boutiques;
 
-    #[ORM\Column(type: "integer", length: 255)]
-    private $flutterIcon;
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
+    private $logo;
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
@@ -123,14 +123,14 @@ class Category
         return $this;
     }
 
-    public function getFlutterIcon(): int
+    public function getLogo(): string
     {
-        return $this->flutterIcon;
+        return $this->logo;
     }
 
-    public function setFlutterIcon(int $flutterIcon): self
+    public function setLogo(string $logo): self
     {
-        $this->flutterIcon = $flutterIcon;
+        $this->logo = $logo;
 
         return $this;
     }

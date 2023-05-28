@@ -10,6 +10,7 @@ use App\Entity\ProduitObject;
 use App\Entity\Transaction;
 use App\FunctionU\MyFunction;
 use FFI\Exception;
+use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -84,12 +85,17 @@ class CategoryController extends AbstractController
      * 
      * 
      */
-    public function categoryNew(Request $request)
+    public function categoryNew(Request $request, SluggerInterface $slugger)
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
-        $possible = false;
+        $data = [
+            'keySecret' => $request->get('keySecret'),
+            'libelle' => $request->get('libelle'),
+            'description' => $request->get('description'),
+
+        ];
+
 
 
 
@@ -113,21 +119,237 @@ class CategoryController extends AbstractController
 
 
         if ($user) {
-            $category =   new Category();
+            if ($user->getTypeUser()->getId() == 1) {
 
-            $category->setLibelle($data['libelle'] ?? '');
-            $category->setDescription($data['description'] ?? '');
+                $file =  $request->files->get('file');
+                if ($file) {
+                    $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    // this is needed to safely include the file name as part of the URL
+                    $safeFilenameData = $slugger->slug($originalFilenameData);
+                    $newFilenameData  =
+                        $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
+                    $file->move(
+                        $this->getParameter('category_object'),
+                        $newFilenameData
+                    );
 
-            $this->em->persist($category);
-            $this->em->flush();
+                    $category = new Category();
+
+                    $category->setLibelle($data['libelle'] ?? '');
+                    $category->setDescription($data['description'] ?? '');
+                    $category->setLogo($newFilenameData);
+
+                    $this->em->persist($category);
+                    $this->em->flush();
+
+                    return
+                        new JsonResponse(
+                            [
+                                'message'
+                                => 'success'
+                            ],
+                            200
+                        );
+                } else {
+                    return
+                        new JsonResponse([
+                            'data'
+                            => [],
+                            'message' => 'Une Erreur est survenue'
+                        ], 203);
+                }
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Une Erreur est survenue'
+                    ], 203);
+            }
+        } else {
             return
-                new JsonResponse(
-                    [
-                        'message'
-                        =>  'success'
-                    ],
-                    200
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+    /**
+     * @Route("/category/update", name="categoryUpdate", methods={"PATCH"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryUpdate(Request $request, SluggerInterface $slugger)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = [
+            'category' => $request->get('category'),
+            'keySecret' => $request->get('keySecret'),
+            'libelle' => $request->get('libelle'),
+            'description' => $request->get('description'),
+
+        ];
+
+
+
+
+
+        if (
+            empty($data['keySecret'])
+
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $keySecret = $data['keySecret'];
+        $category = $data['category'];
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+
+
+        if ($user) {
+            if ($user->getTypeUser()->getId() == 1) {
+                $category = $this->em->getRepository(Category::class)->findOneBy(['category' => $category]);
+
+
+                $category->setLibelle($data['libelle'] ?? $category->getLibelle());
+                $category->setDescription($data['description'] ?? $category->getDescription());
+                $file =  $request->files->get('file');
+                if ($file) {
+                    $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    // this is needed to safely include the file name as part of the URL
+                    $safeFilenameData = $slugger->slug($originalFilenameData);
+                    $newFilenameData  =
+                        $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
+                    $file->move(
+                        $this->getParameter('category_object'),
+                        $newFilenameData
+                    );
+
+                    $category->setLogo($newFilenameData);
+                }
+                $this->em->persist($category);
+                $this->em->flush();
+
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            => 'success'
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Une Erreur est survenue'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+    /**
+     * @Route("/category/status/change", name="categoryStatusChange", methods={"PATCH"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryStatusChange(Request $request, SluggerInterface $slugger)
+    {
+
+
+
+
+        $data = $request->toArray();
+
+        if (
+            empty($data['category']) ||
+            empty($data['keySecret'])
+
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez renseigner les informations correctes'
+                ],
+                400
+            );
+        }
+
+        $category  =
+            $data['category'];
+        $keySecret
+            = $data['keySecret'];
+
+
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+
+
+        if ($user) {
+            if ($user->getTypeUser()->getId() == 1) {
+                $category = $this->em->getRepository(Category::class)->findOneBy(['category' => $category]);
+                $category->setStatus(
+                    !$category->isStatus()
                 );
+                $this->em->persist($category);
+                $this->em->flush();
+
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            => 'success'
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Une Erreur est survenue'
+                    ], 203);
+            }
         } else {
             return
                 new JsonResponse([
@@ -170,7 +392,7 @@ class CategoryController extends AbstractController
                     $categoryU =  [
                         'id' => $category->getId(),
                         'libelle' => $category->getLibelle(),
-                        'icon' => $category->getFlutterIcon(),
+                        'logo' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/category/' . $category->getLogo(),
                         'description' => $category->getDescription(),
                         // 'titre' => $category->getTitre(), 
                         'status' => $category->isStatus(),
@@ -230,6 +452,7 @@ class CategoryController extends AbstractController
                     'id' => $cat->getId(),
                     'libelle' => $cat->getLibelle(),
                     'description' => $cat->getDescription(),
+                    'logo' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/category/' . $cat->getLogo(),
                     // 'titre' => $cat->getTitre(), 
                     'status' => $cat->isStatus(),
 
@@ -301,9 +524,7 @@ class CategoryController extends AbstractController
         $boutiques = $this->em->getRepository(Boutique::class)->findBy(['category' => $category]);
 
         if ($boutiques) {
-
-
-
+ 
             $lB = [];
             foreach ($boutiques   as $boutique) {
                 if ($boutique->isStatus()) {

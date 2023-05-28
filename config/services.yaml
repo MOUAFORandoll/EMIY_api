@@ -5,8 +5,10 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
   produits_object: "%kernel.project_dir%/public/images/produits"
+  category_object: "%kernel.project_dir%/public/images/category"
   boutiques_object: "%kernel.project_dir%/public/images/boutiques"
   shorts_object: "%kernel.project_dir%/public/videos/shorts"
+  point_livraison_object: "%kernel.project_dir%/public/videos/point_livraison"
 
 services:
    
@@ -35,6 +37,8 @@ services:
           event: lexik_jwt_authentication.on_jwt_created,
           method: onJWTCreated,
         }
- 
+  App\Command\MigrateToPG:
+    tags:
+      - { name: "console.command", command: "app:migrate" }
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones

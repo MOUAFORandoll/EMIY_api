@@ -1,0 +1,69 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello BoutiqueController!{% endblock %}
+
+{% block body %}
+<style> 
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            color: #0077c2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #0077c2;
+            color: #fff;
+        }
+        .total {
+            font-weight: bold;
+        } 
+</style>
+ 
+<div class="example-wrapper">
+     <body>
+    <div class="container">
+        <h1>Facture : {{ nom }}</h1>
+         <h2>Date : {{ date }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Quantite</th>
+                    <th>Prix</th>
+                </tr>
+            </thead>
+            <tbody>
+               {{ data|raw  }}
+               
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" class="total">Total :</td>
+                    <td class="total">FCFA 0</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</body>
+</html> 
+
+
+
+</div>
+{% endblock %}

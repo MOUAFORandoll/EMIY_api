@@ -27,10 +27,7 @@ class ModePaiement
 
     #[ORM\Column(type: "string", length: 255)]
     private $libelle;
-
-
-    #[ORM\Column(type: "string", length: 255)]
-    private $siteId;
+ 
 
 
     #[ORM\OneToMany(targetEntity: Transaction::class, mappedBy: "modePaiement")]
@@ -54,17 +51,7 @@ class ModePaiement
         return $this->id;
     }
 
-    public function getSiteId(): ?string
-    {
-        return $this->siteId;
-    }
-
-    public function setSiteId(string $siteId): self
-    {
-        $this->siteId = $siteId;
-
-        return $this;
-    }
+  
     public function getLibelle(): ?string
     {
         return $this->libelle;

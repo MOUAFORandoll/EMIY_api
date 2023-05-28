@@ -10,6 +10,7 @@ use App\Entity\Localisation;
 use App\Entity\ModePaiement;
 use App\Entity\Panier;
 use App\Entity\Place;
+use App\Entity\PointLivraison;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Transaction;
@@ -123,123 +124,136 @@ class CommandeController extends AbstractController
      */
     public function commandeNewX(Request $request)
     {
-        $data = $request->toArray();
-        if (
-            (empty($data['nom']) && empty($data['keySecret']))
+        $this->em->beginTransaction();
+        try {
+            $data = $request->toArray();
+            if (
+                (empty($data['nom']) && empty($data['keySecret']))
 
-            || (empty($data['phone']) && empty($data['keySecret']))
-            || empty($data['listProduits'])
-            || empty($data['idModePaiement'])
-            || empty($data['ville'])
+                || (empty($data['phone']) && empty($data['keySecret']))
+                || empty($data['listProduits'])
+                || empty($data['idModePaiement'])
+                || empty($data['ville'])
+                || empty($data['point_livraison'])
 
-            || empty($data['longitude'])
-            || empty($data['latitude'])
+                || empty($data['longitude'])
+                || empty($data['latitude'])
 
-        ) {
+            ) {
+                return new JsonResponse([
+                    'message' =>  'Veuillez recharger la page et reessayer   '
+                ], 400);
+            }
+            // return new JsonResponse([
+            //     'message' => $data['listProduits']
+            // ], 400);
+            $client = null;
+            $codePanier =  'com' .
+                $this->getUniqueCodeToken();
+            // $montant = $pl->getVoyage()->getPrix();
+            if (!empty($data['keySecret'])) {
+                $client = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+            }
+            // if (!$client) {
+            //     return new JsonResponse([
+            //         'message' => 'Client inexistant '
+
+            //     ], 203);
+            // }
+
+            $nom = $data['nom'] ??   $client->getNom();
+            $prenom = '';
+            $phone = $data['phone'] ?? $client->getPhone();
+
+            $modePaiement
+                = $this->em->getRepository(ModePaiement::class)->findOneBy(['id' => $data['idModePaiement']]);
+            $point_livraison
+                = $this->em->getRepository(PointLivraison::class)->findOneBy(['id' => $data['point_livraison']]);
+
+            /**
+             * doit contenir l'id et la quantite de chaque produits
+             */
+            $listProduits = $data['listProduits'];
+            // $produit = $this->em->getRepository(Produit::class)->findOneBy(['codeProduit' => $chaine]);
+            if (!$listProduits) {
+                return new JsonResponse([
+                    'message' => 'Selectionner des produits'
+
+                ], 203);
+            }
+
+            $panier = new Panier();
+            // $panier->setListProduits($data['listProduits']);
+            $panier->setCodePanier($codePanier);
+            $panier->setPrenomClient($prenom);
+            $panier->setNomClient($nom);
+            // $panier->setMontant($montant);
+            $panier->setPhoneClient($phone);
+            if ($client) {
+                $panier->setUser($client);
+            }
+            $produits = [];
+
+            $total = 0;
+            $this->em->persist($panier);
+            foreach ($listProduits as $prod) {
+                $produit = $this->em->getRepository(Produit::class)->findOneBy(['id' => $prod[0]]);
+                if ($produit) {
+                    $lpp = new ListProduitPanier();
+                    $lpp->setPanier($panier);
+                    $lpp->setProduit($produit);
+                    $lpp->setQuantite($prod[1]);
+                    $lpp->setCodeProduitPanier($this->getUniqueCode());
+                    $this->em->persist($lpp);
+                    $produits[] = [
+                        'nom' =>
+                        $produit->getTitre(),
+                        'quantite' => $prod[1],
+                        'prix'
+                        => $produit->getPrixUnitaire() *  $prod[1],
+                    ];
+                    $total += $produit->getPrixUnitaire() * $prod[1];
+                }
+            }
+
+            $ville = $data['ville'];
+            $longitude = $data['longitude'];
+            $latitude = $data['latitude'];
+            $localisation = new Localisation();
+            $localisation->setVille(
+                $ville
+            );
+            $localisation->setLongitude($longitude);
+            $localisation->setLatitude($latitude);
+            $this->em->persist($localisation);
+
+            $commande = new Commande();
+            $commande->setTitre(
+                'Achat de produit'
+            );
+            $commande->setDescription('Achat de produit');
+            $commande->setModePaiement($modePaiement);
+            $commande->setPanier($panier);
+            $commande->setLocalisation($localisation);
+            $commande->setToken($codePanier);
+            $commande->setCodeCommande($this->getUniqueCode());
+            $commande->setCodeClient($this->getUniqueCode());
+
+            $commande->setStatusBuy(0);
+            $commande->setPointLivraison($point_livraison);
+
+            $this->em->persist($commande);
+
+            $this->em->flush();
+
+            return $this->myFuntion->paid($data,  $total,  $commande->getId());
+        } catch (\Exception $e) {
+            // Une erreur s'est produite, annulez la transaction
+            $this->em->rollback();
             return new JsonResponse([
-                'message' =>  'Veuillez recharger la page et reessayer   '
-            ], 400);
-        }
-        // return new JsonResponse([
-        //     'message' => $data['listProduits']
-        // ], 400);
-        $client = null;
-        $codePanier =  'com' .
-            $this->getUniqueCodeToken();
-        // $montant = $pl->getVoyage()->getPrix();
-        if (!empty($data['keySecret'])) {
-            $client = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
-        }
-        // if (!$client) {
-        //     return new JsonResponse([
-        //         'message' => 'Client inexistant '
-
-        //     ], 203);
-        // }
-
-        $nom = $data['nom'] ??   $client->getNom();
-        $prenom = '';
-        $phone = $data['phone'] ?? $client->getPhone();
-
-        $modePaiement
-            = $this->em->getRepository(ModePaiement::class)->findOneBy(['id' => $data['idModePaiement']]);
-
-        /**
-         * doit contenir l'id et la quantite de chaque produits
-         */
-        $listProduits = $data['listProduits'];
-        // $produit = $this->em->getRepository(Produit::class)->findOneBy(['codeProduit' => $chaine]);
-        if (!$listProduits) {
-            return new JsonResponse([
-                'message' => 'Selectionner des produits'
-
+                'message' => 'Une erreur est survenue'
             ], 203);
         }
-
-        $panier = new Panier();
-        // $panier->setListProduits($data['listProduits']);
-        $panier->setCodePanier($codePanier);
-        $panier->setPrenomClient($prenom);
-        $panier->setNomClient($nom);
-        // $panier->setMontant($montant);
-        $panier->setPhoneClient($phone);
-        if ($client) {
-            $panier->setUser($client);
-        }
-        $produits = [];
-
-        $total = 0;
-        $this->em->persist($panier);
-        foreach ($listProduits as $prod) {
-            $produit = $this->em->getRepository(Produit::class)->findOneBy(['id' => $prod[0]]);
-            if ($produit) {
-                $lpp = new ListProduitPanier();
-                $lpp->setPanier($panier);
-                $lpp->setProduit($produit);
-                $lpp->setQuantite($prod[1]);
-                $lpp->setCodeProduitPanier($this->getUniqueCode());
-                $this->em->persist($lpp);
-                $produits[] = [
-                    'nom' =>
-                    $produit->getTitre(),
-                    'quantite' => $prod[1],
-                    'prix'
-                    => $produit->getPrixUnitaire() *  $prod[1],
-                ];
-                $total += $produit->getPrixUnitaire() * $prod[1];
-            }
-        }
-
-        $ville = $data['ville'];
-        $longitude = $data['longitude'];
-        $latitude = $data['latitude'];
-        $localisation = new Localisation();
-        $localisation->setVille(
-            $ville
-        );
-        $localisation->setLongitude($longitude);
-        $localisation->setLatitude($latitude);
-        $this->em->persist($localisation);
-
-        $commande = new Commande();
-        $commande->setTitre(
-            'Achat de produit'
-        );
-        $commande->setDescription('Achat de produit');
-        $commande->setModePaiement($modePaiement);
-        $commande->setPanier($panier);
-        $commande->setLocalisation($localisation);
-        $commande->setToken($codePanier);
-        $commande->setCodeCommande($this->getUniqueCode());
-        $commande->setCodeClient($this->getUniqueCode());
-
-        $commande->setStatusBuy(0);
-
-        $this->em->persist($commande);
-
-        $this->em->flush();
-
-        return $this->myFuntion->paid($data,  $total,  $commande->getId());
     }
 
 
@@ -2051,12 +2065,12 @@ class CommandeController extends AbstractController
         file_put_contents($publicPath . '/' . $fileName, $pdf->output());
         // Créer le lien de téléchargement du fichier PDF
         $downloadUrl = $this->generateUrl('download_pdf', [
-            'fileName' => $fileName,
+            'fileName' =>  $fileName,
 
         ]);
 
         // Retourner le lien de téléchargement du fichier PDF
-        return $downloadUrl;
+        return  $downloadUrl;
     }
     /**
      * @Route("/download-pdf/{fileName}", name="download_pdf")
