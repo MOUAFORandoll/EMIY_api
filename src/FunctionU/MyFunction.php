@@ -623,4 +623,33 @@ class MyFunction
         }
         return $chaine;
     }
+
+
+    public function Socekt_Emi($data)
+    {
+
+
+        $host_serveur_socket = 'http://localhost:3000';
+        $first =   $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+        $content = $first->getContent();
+        $index = strpos($content, 0);
+        $res = json_decode(substr($content, $index + 1), true);
+        $sid = $res['sid'];
+        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+            'body' => '40'
+        ]);
+        // $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+        // $dataSign = ['signin', '350'];
+        $dataEmit = ['message', json_encode( $data)];
+
+        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42["%s", %s]', $userID, json_encode($dataEmit))
+        // ]);
+        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42%s',  json_encode($dataSign))
+        // ]);
+        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+            'body' => sprintf('42%s',  json_encode($dataEmit))
+        ]);
+    }
 }

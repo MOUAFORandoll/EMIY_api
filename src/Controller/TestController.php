@@ -12,6 +12,7 @@ use App\Entity\ProduitObject;
 use App\Entity\Short;
 use App\Entity\UserPlateform;
 use Faker\Factory;
+use Lcobucci\JWT\Encoder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,10 +32,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\FunctionU\MyFunction;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
-use SocketIOClient\SocketIO;
-
 use Dompdf\Dompdf;
 
+use ElephantIO\Client;
+use ElephantIO\Engine\SocketIO;
 
 class TestController extends AbstractController
 {
@@ -328,7 +329,7 @@ class TestController extends AbstractController
         return $this->json([
             'downloadUrl'
             =>   $downloadUrl
-            
+
         ]);
     }
     /**
@@ -609,7 +610,7 @@ class TestController extends AbstractController
 
 
     /**
-     * @Route("/test/socke", name="TestSocket", methods={"GET"})
+     * @Route("/test/socket/{indexw}", name="TestSocket", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -624,51 +625,34 @@ class TestController extends AbstractController
      * 
      * 
      */
-    public function TestSocket(Request $request, SluggerInterface $slugger)
+    public function TestSocket($indexw)
     {
 
-        // Récupérer les données nécessaires pour générer le PDF
-        $data = ['$this->getDoctrine()->getRepository(Data::class)->findAll()'];
 
-        // Créer une instance de PDF avec la bibliothèque de votre choix (ex : Dompdf)
-        $pdf = new Dompdf();
-        $contenu = '';
-        for ($i = 0; $i < 10; $i++) {
-            $contenu = "<tr>
-                    <td>" . $i  . "</td>
-                    <td>  John Doe </td>
-                    <td>FCFA" . 150.00 . "</td>
-                </tr>\n";
-        }
+        // $host = 'http://localhost:3000';
+        // $first =   $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+        // $content = $first->getContent();
+        // $index = strpos($content, 0);
+        // $res = json_decode(substr($content, $index + 1), true);
+        // $sid = $res['sid'];
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => '40'
+        // ]);
+        // $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}");
 
-        // Générer le contenu du PDF avec les données récupérées
-        $html = $this->renderView('pdf/test.html.twig', [
-            'data'
-            => $contenu,
-            'nom' => '',
-            'date' => '',
-        ]);
-        $pdf->loadHtml($html);
+        $data = [
+            "tEST" => 'general',
+            "DSD" => 'general'
+        ];
 
-        // Rendre le PDF
-        $pdf->render();
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42%s', json_encode($data))
+        // ]);
+        $this->myFunction->Socekt_Emi($data);
 
-        // Enregistrer le PDF dans un dossier web accessible au public
-        $fileName = 'data.pdf';
-        $publicPath = $this->getParameter('kernel.project_dir') . '/public/factures';
-        // $pdf->output($publicPath . '/' . $fileName);
-        file_put_contents($publicPath . '/' . $fileName, $pdf->output());
-        // Créer le lien de téléchargement du fichier PDF
-        $downloadUrl = $this->generateUrl('download_pdf', [
-            'fileName'
-            => $fileName,
-
-        ]);
-
-        // Retourner le lien de téléchargement du fichier PDF
         return $this->json([
-            'downloadUrl'
-            =>   $downloadUrl
+            'status'
+            =>   $data
 
         ]);
     }
