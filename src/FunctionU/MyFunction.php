@@ -10,6 +10,7 @@ use App\Entity\Compte;
 use App\Entity\HistoriquePaiement;
 use App\Entity\ListProduitPanier;
 use App\Entity\Localisation;
+use App\Entity\NegociationProduit;
 use App\Entity\NotationBoutique;
 use App\Entity\NotationProduit;
 use App\Entity\Produit;
@@ -329,7 +330,8 @@ class MyFunction
 
                     return new JsonResponse(
                         [
-                            'token' => $response->toArray()["transaction"]['reference'], 'message' => 'Confirmer votre paiement',
+                            'token' => $response->toArray()["transaction"]['reference'],
+                            'message' => 'Confirmer votre paiement',
 
                             'url' =>  $response->toArray()['authorization_url'],
 
@@ -624,8 +626,12 @@ class MyFunction
         return $chaine;
     }
 
+    //commande
+    //transaction
+    //negociation
 
-    public function Socekt_Emi($data)
+
+    public function Socekt_Emit($canal,$data)
     {
 
 
@@ -640,7 +646,7 @@ class MyFunction
         ]);
         // $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}");
         // $dataSign = ['signin', '350'];
-        $dataEmit = ['message', json_encode( $data)];
+        $dataEmit = [$canal, json_encode($data)];
 
         // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42["%s", %s]', $userID, json_encode($dataEmit))
@@ -651,5 +657,52 @@ class MyFunction
         $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
             'body' => sprintf('42%s',  json_encode($dataEmit))
         ]);
+    }
+
+    public function Socekt_Emit_general($data)
+    {
+
+
+        $host_serveur_socket = 'http://localhost:3000';
+        $first =   $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+        $content = $first->getContent();
+        $index = strpos($content, 0);
+        $res = json_decode(substr($content, $index + 1), true);
+        $sid = $res['sid'];
+        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+            'body' => '40'
+        ]);
+        // $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+        // $dataSign = ['signin', '350'];
+        $dataEmit = ['general', json_encode($data)];
+
+        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42["%s", %s]', $userID, json_encode($dataEmit))
+        // ]);
+        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42%s',  json_encode($dataSign))
+        // ]);
+        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+            'body' => sprintf('42%s',  json_encode($dataEmit))
+        ]);
+    }
+
+    public function getCodeNegociation()
+    {
+
+
+        $code = 'cn';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 8; ++$i) {
+            $code .= $listeCar[random_int(0, $max)];
+        }
+        $ExistCode = $this->em->getRepository(NegociationProduit::class)->findOneBy(['codeNegociation' => $code]);
+        if ($ExistCode) {
+            return
+                $this->getUniqueNameProduit();
+        } else {
+            return $code;
+        }
     }
 }

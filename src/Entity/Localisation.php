@@ -45,8 +45,8 @@ class Localisation
     #[ORM\OneToMany(targetEntity: Boutique::class, mappedBy: "localisation")]
     private $boutiques;
 
-    #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: "localisation")]
-    private $commandes;
+    // #[ORM\OneToMany(targetEntity: Commande::class, mappedBy: "localisation")]
+    // private $commandes;
 
     // Rest of your class properties and methods
     public function __construct()
@@ -54,7 +54,7 @@ class Localisation
 
         $this->dateIn = new \DateTime();
         $this->boutiques = new ArrayCollection();
-        $this->commandes = new ArrayCollection();
+        // $this->commandes = new ArrayCollection();
     }
     public function getId(): ?int
     {
@@ -161,33 +161,33 @@ class Localisation
         return $this;
     }
 
-    /**
-     * @return Collection<int, Commande>
-     */
-    public function getCommandes(): Collection
-    {
-        return $this->commandes;
-    }
+    // /**
+    //  * @return Collection<int, Commande>
+    //  */
+    // public function getCommandes(): Collection
+    // {
+    //     return $this->commandes;
+    // }
 
-    public function addCommande(Commande $commande): self
-    {
-        if (!$this->commandes->contains($commande)) {
-            $this->commandes[] = $commande;
-            $commande->setLocalisation($this);
-        }
+    // public function addCommande(Commande $commande): self
+    // {
+    //     if (!$this->commandes->contains($commande)) {
+    //         $this->commandes[] = $commande;
+    //         $commande->setLocalisation($this);
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
-    public function removeCommande(Commande $commande): self
-    {
-        if ($this->commandes->removeElement($commande)) {
-            // set the owning side to null (unless already changed)
-            if ($commande->getLocalisation() === $this) {
-                $commande->setLocalisation(null);
-            }
-        }
+    // public function removeCommande(Commande $commande): self
+    // {
+    //     if ($this->commandes->removeElement($commande)) {
+    //         // set the owning side to null (unless already changed)
+    //         if ($commande->getLocalisation() === $this) {
+    //             $commande->setLocalisation(null);
+    //         }
+    //     }
 
-        return $this;
-    }
+    //     return $this;
+    // }
 }

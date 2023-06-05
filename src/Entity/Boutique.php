@@ -57,6 +57,9 @@ class Boutique
     #[ORM\OneToMany(mappedBy: 'boutique', targetEntity: NotationBoutique::class)]
     private Collection $notationBoutiques;
 
+    #[ORM\OneToMany(mappedBy: 'boutique', targetEntity: AbonnementBoutique::class)]
+    private Collection $abonnementBoutiques;
+
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
@@ -64,6 +67,7 @@ class Boutique
         $this->boutiqueObjects = new ArrayCollection();
         $this->shorts = new ArrayCollection();
         $this->notationBoutiques = new ArrayCollection();
+        $this->abonnementBoutiques = new ArrayCollection();
     }
     public function getId(): ?int
     {
@@ -305,6 +309,36 @@ class Boutique
             // set the owning side to null (unless already changed)
             if ($notationBoutique->getBoutique() === $this) {
                 $notationBoutique->setBoutique(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, AbonnementBoutique>
+     */
+    public function getAbonnementBoutiques(): Collection
+    {
+        return $this->abonnementBoutiques;
+    }
+
+    public function addAbonnementBoutique(AbonnementBoutique $abonnementBoutique): self
+    {
+        if (!$this->abonnementBoutiques->contains($abonnementBoutique)) {
+            $this->abonnementBoutiques->add($abonnementBoutique);
+            $abonnementBoutique->setBoutique($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAbonnementBoutique(AbonnementBoutique $abonnementBoutique): self
+    {
+        if ($this->abonnementBoutiques->removeElement($abonnementBoutique)) {
+            // set the owning side to null (unless already changed)
+            if ($abonnementBoutique->getBoutique() === $this) {
+                $abonnementBoutique->setBoutique(null);
             }
         }
 

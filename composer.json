@@ -17,6 +17,7 @@
         "elephantio/elephant.io": "^4.2",
         "fpdf/fpdf": "^1.85",
         "gesdinet/jwt-refresh-token-bundle": "*",
+        "knplabs/knp-paginator-bundle": "^6.2",
         "lexik/jwt-authentication-bundle": "^2.14",
         "nelmio/api-doc-bundle": "^4.11",
         "nelmio/cors-bundle": "^2.3",

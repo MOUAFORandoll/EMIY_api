@@ -58,6 +58,9 @@ class ListProduitPanier
     #[ORM\Column(type: "datetime")]
     private $dateCreated;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $prixUnitaireVente = null;
+
     // Rest of your class properties and methods
     public function __construct()
     {
@@ -136,6 +139,18 @@ class ListProduitPanier
     public function setCodeProduitPanier(string $codeProduitPanier): self
     {
         $this->codeProduitPanier = $codeProduitPanier;
+
+        return $this;
+    }
+
+    public function getPrixUnitaireVente(): ?int
+    {
+        return $this->prixUnitaireVente;
+    }
+
+    public function setPrixUnitaireVente(?int $prixUnitaireVente): self
+    {
+        $this->prixUnitaireVente = $prixUnitaireVente;
 
         return $this;
     }

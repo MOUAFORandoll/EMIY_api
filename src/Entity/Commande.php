@@ -62,11 +62,14 @@ class Commande
     #[ORM\OneToMany(targetEntity: HistoriquePaiement::class, mappedBy: "commande")]
     private $historiquePaiements;
 
-    #[ORM\ManyToOne(targetEntity: Localisation::class, inversedBy: "commandes")]
-    private $localisation;
+    // #[ORM\ManyToOne(targetEntity: Localisation::class, inversedBy: "commandes")]
+    // private $localisation;
 
     #[ORM\ManyToOne(inversedBy: 'commandes')]
     private ?PointLivraison $point_livraison = null;
+
+    #[ORM\ManyToOne(inversedBy: 'commandes')]
+    private ?TypeCommande $typeCommande = null;
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
@@ -261,17 +264,17 @@ class Commande
         return $this;
     }
 
-    public function getLocalisation(): ?Localisation
-    {
-        return $this->localisation;
-    }
+    // public function getLocalisation(): ?Localisation
+    // {
+    //     return $this->localisation;
+    // }
 
-    public function setLocalisation(?Localisation $localisation): self
-    {
-        $this->localisation = $localisation;
+    // public function setLocalisation(?Localisation $localisation): self
+    // {
+    //     $this->localisation = $localisation;
 
-        return $this;
-    }
+    //     return $this;
+    // }
 
     public function getPointLivraison(): ?PointLivraison
     {
@@ -281,6 +284,18 @@ class Commande
     public function setPointLivraison(?PointLivraison $point_livraison): self
     {
         $this->point_livraison = $point_livraison;
+
+        return $this;
+    }
+
+    public function getTypeCommande(): ?TypeCommande
+    {
+        return $this->typeCommande;
+    }
+
+    public function setTypeCommande(?TypeCommande $typeCommande): self
+    {
+        $this->typeCommande = $typeCommande;
 
         return $this;
     }

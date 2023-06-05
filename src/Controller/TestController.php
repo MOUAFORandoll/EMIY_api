@@ -641,14 +641,68 @@ class TestController extends AbstractController
         // $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}");
 
         $data = [
-            "tEST" => 'general',
-            "DSD" => 'general'
+            'canal' => "cnrKvDIERr",
+            'data' => [
+                "a" => 'aaaaaaaaaaaaa',
+                "b" => 'general'
+            ]
         ];
 
         // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42%s', json_encode($data))
         // ]);
-        $this->myFunction->Socekt_Emi($data);
+        $this->myFunction->Socekt_Emit("negociation", $data);
+
+        return $this->json([
+            'status'
+            =>   $data
+
+        ]);
+    }
+
+
+    /**
+     * @Route("/test/general/{indexw}", name="TestSocketGeneral", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function TestSocketGeneral($indexw)
+    {
+
+
+        // $host = 'http://localhost:3000';
+        // $first =   $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+        // $content = $first->getContent();
+        // $index = strpos($content, 0);
+        // $res = json_decode(substr($content, $index + 1), true);
+        // $sid = $res['sid'];
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => '40'
+        // ]);
+        // $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+
+        $data = [
+
+            "indexw" => $indexw,
+            "message" => 'Id fugiat ex nulla veniam ea exercitation velit dolor ad. Minim exercitation magna officia ipsum. Nostrud eu officia ipsum pariatur cillum. Non labore amet non sunt ullamco eiusmod veniam laboris. Ea occaecat in excepteur velit commodo esse. Consectetur laborum in amet voluptate pariatur.'
+
+        ];
+
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42%s', json_encode($data))
+        // ]);
+        $this->myFunction->Socekt_Emit_general($data);
 
         return $this->json([
             'status'

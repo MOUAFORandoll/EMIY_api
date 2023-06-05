@@ -139,111 +139,112 @@ class BoutiqueController extends AbstractController
     public function boutiqueUserNew(Request $request, SluggerInterface $slugger)
     {
         $this->em->beginTransaction();
-        try {  $data = [
-            'keySecret' => $request->get('keySecret'),
+        try {
+            $data = [
+                'keySecret' => $request->get('keySecret'),
 
-            'description' => $request->get('description'),
-            'idCategory' => $request->get('idCategory'),
-            'titre' => $request->get('titre'),
-            'ville' => $request->get('ville'),
-            'longitude' =>
-            $request->get('longitude'),
-            'latitude' => $request->get('latitude'),
-        ];
-        // return new JsonResponse([
+                'description' => $request->get('description'),
+                'idCategory' => $request->get('idCategory'),
+                'titre' => $request->get('titre'),
+                'ville' => $request->get('ville'),
+                'longitude' =>
+                $request->get('longitude'),
+                'latitude' => $request->get('latitude'),
+            ];
+            // return new JsonResponse([
 
-        //     'd' => $data
-        // ], 400);
-        if (empty($data['titre']) ||/*  $request->files->get('file')    || */ empty($data['idCategory']) || empty($data['keySecret']) || empty($data['description'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayer   ',
+            //     'd' => $data
+            // ], 400);
+            if (empty($data['titre']) ||/*  $request->files->get('file')    || */ empty($data['idCategory']) || empty($data['keySecret']) || empty($data['description'])) {
+                return new JsonResponse([
+                    'message' => 'Veuillez recharger la page et reessayer   ',
 
-            ], 400);
-        }
-        $description = $data['description'];
-        $titre = $data['titre'];
-        $keySecret = $data['keySecret'];
-        $ville = $data['ville'];
-        $longitude = $data['longitude'];
-        $latitude = $data['latitude'];
-        $codeBoutique = $this->getUniqueCodeBoutique();
-        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
-        if (!$user) {
-            return new JsonResponse([
-                'message' => 'Compte introuvable'
-
-            ], 203);
-        }
-        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['titre' => $titre]);
-        $boutique1 = $this->em->getRepository(Boutique::class)->findOneBy(['user' => $user]);
-        if ($boutique1) {
-            return new JsonResponse([
-                'message' => 'Vous possedez deja une boutique'
-
-            ], 203);
-        }
-        $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $data['idCategory']]);
-        if (!$boutique) {
-
-
-            if (!empty($longitude) && !empty($latitude)) {
-                $localisation = new Localisation();
-                $localisation->setVille(
-                    $ville
-                );
-                $localisation->setLongitude($longitude);
-                $localisation->setLatitude($latitude);
-                $this->em->persist($localisation);
+                ], 400);
             }
+            $description = $data['description'];
+            $titre = $data['titre'];
+            $keySecret = $data['keySecret'];
+            $ville = $data['ville'];
+            $longitude = $data['longitude'];
+            $latitude = $data['latitude'];
+            $codeBoutique = $this->getUniqueCodeBoutique();
+            $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+            if (!$user) {
+                return new JsonResponse([
+                    'message' => 'Compte introuvable'
 
-            $boutique = new Boutique();
-
-            $boutique->setUser($user);
-            $boutique->setDescription($description);
-            $boutique->setTitre($titre);
-
-            $boutique->setCategory($category);
-            $boutique->setCodeBoutique($codeBoutique);
-
-
-            if (!empty($longitude) && !empty($latitude)) {
-                $boutique->setLocalisation($localisation);
+                ], 203);
             }
-            $this->em->persist($boutique);
+            $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['titre' => $titre]);
+            $boutique1 = $this->em->getRepository(Boutique::class)->findOneBy(['user' => $user]);
+            if ($boutique1) {
+                return new JsonResponse([
+                    'message' => 'Vous possedez deja une boutique'
 
-            $file =  $request->files->get('file');
-            if ($file) {
-                $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                // this is needed to safely include the file name as part of the URL
-                $safeFilenameData = $slugger->slug($originalFilenameData);
-                $newFilenameData =
-                    $this->myFunction->getUniqueNameBoutiqueImg() . '.' . $file->guessExtension();
-
-                $file->move(
-                    $this->getParameter('boutiques_object'),
-                    $newFilenameData
-                );
-                $boutiqueO = new BoutiqueObject();
-
-                $boutiqueO->setSrc($newFilenameData);
-                $boutiqueO->setBoutique($boutique);
-                $this->em->persist($boutiqueO);
-
-                // $imagePresent = true;
+                ], 203);
             }
-            $this->em->flush();
-            return new JsonResponse([
-                'message' => 'Boutique cree avec success',
+            $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $data['idCategory']]);
+            if (!$boutique) {
 
-                'id' =>  $boutique->getId()
 
-            ], 200);
-        } else {
-            return new JsonResponse([
-                'message' => 'Ce nom de boutique est deja utilise'
+                if (!empty($longitude) && !empty($latitude)) {
+                    $localisation = new Localisation();
+                    $localisation->setVille(
+                        $ville
+                    );
+                    $localisation->setLongitude($longitude);
+                    $localisation->setLatitude($latitude);
+                    $this->em->persist($localisation);
+                }
 
-            ], 203);
-        }
+                $boutique = new Boutique();
+
+                $boutique->setUser($user);
+                $boutique->setDescription($description);
+                $boutique->setTitre($titre);
+
+                $boutique->setCategory($category);
+                $boutique->setCodeBoutique($codeBoutique);
+
+
+                if (!empty($longitude) && !empty($latitude)) {
+                    $boutique->setLocalisation($localisation);
+                }
+                $this->em->persist($boutique);
+
+                $file =  $request->files->get('file');
+                if ($file) {
+                    $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    // this is needed to safely include the file name as part of the URL
+                    $safeFilenameData = $slugger->slug($originalFilenameData);
+                    $newFilenameData =
+                        $this->myFunction->getUniqueNameBoutiqueImg() . '.' . $file->guessExtension();
+
+                    $file->move(
+                        $this->getParameter('boutiques_object'),
+                        $newFilenameData
+                    );
+                    $boutiqueO = new BoutiqueObject();
+
+                    $boutiqueO->setSrc($newFilenameData);
+                    $boutiqueO->setBoutique($boutique);
+                    $this->em->persist($boutiqueO);
+
+                    // $imagePresent = true;
+                }
+                $this->em->flush();
+                return new JsonResponse([
+                    'message' => 'Boutique cree avec success',
+
+                    'id' =>  $boutique->getId()
+
+                ], 200);
+            } else {
+                return new JsonResponse([
+                    'message' => 'Ce nom de boutique est deja utilise'
+
+                ], 203);
+            }
         } catch (\Exception $e) {
             // Une erreur s'est produite, annulez la transaction
             $this->em->rollback();
@@ -584,7 +585,7 @@ class BoutiqueController extends AbstractController
                             'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
                             'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
                             'prix' => $produit->getPrixUnitaire(),
-                            'status' => $produit->isStatus(),
+                            'negociable' => $produit->isNegociable(),    'status' => $produit->isStatus(),
                             'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
                             'description' => $produit->getDescription(),
                             'images' => $lsImgP
@@ -718,7 +719,7 @@ class BoutiqueController extends AbstractController
                                 'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
                                 'prix' => $produit->getPrixUnitaire(),
                                 'status' => $produit->isStatus(),
-                                'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+                                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
                                 'description' => $produit->getDescription(),
                                 'images' => $lsImgP
 
@@ -866,7 +867,7 @@ class BoutiqueController extends AbstractController
                         'prix' => $produit->getPrixUnitaire(),
                         'description' => $produit->getDescription(),
                         'status' => $produit->isStatus(),
-                        'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
+                        'negociable' => $produit->isNegociable(), 'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
                         'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
                         'description' => $produit->getDescription(),
                         'images' => $lsImgP

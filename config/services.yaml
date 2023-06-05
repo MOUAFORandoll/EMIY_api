@@ -40,5 +40,8 @@ services:
   App\Command\CronVerifyCommande:
     tags:
       - { name: "console.command", command: "app:verify-com" }
+  App\Command\GenerateEntityControllerCommand:
+    tags: [console.command]
+
   # add more service definitions when explicit configuration is needed
   # please note that last definitions always *replace* previous ones

@@ -283,7 +283,7 @@ class TransactionController extends AbstractController
     /**
      * @Route("/compte/credit", name="compteCredit", methods={"POST"})
      * @param Request $request
-     * @return JsonResponse
+     * 
      * @throws ClientExceptionInterface
      * @throws DecodingExceptionInterface
      * @throws RedirectionExceptionInterface
@@ -299,90 +299,90 @@ class TransactionController extends AbstractController
     public function compteCredit(Request $request)
     {
 
-        $this->em->beginTransaction();
-        try {  // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-            $data = $request->toArray();
+        // $this->em->beginTransaction();
+        // try {  // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
 
 
 
-            if (empty($data['keySecret'])) {
-                return new JsonResponse([
-                    'message' => 'Veuillez renseigner tous les champs'
-
-                ], 203);
-            }
-            if (empty($data['montant'])) {
-                return new JsonResponse([
-                    'message' => 'Veuillez renseigner un montant'
-
-                ], 203);
-            }
-            $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
-
-
-            if (!$user) {
-                return new JsonResponse([
-                    'message' => 'Vous ne pouvez pas poursuivre l\'operation'
-
-                ], 203);
-            }
-            $montant
-                = $data['montant'];
-
-
-
-            $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
-
-            if (!$compte) {
-                return new JsonResponse([
-                    'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
-
-                ], 203);
-            }
-
-            $tyPeT
-                = $this->em->getRepository(TypeTransaction::class)->findOneBy(['id' => 3]);
-            if (!$tyPeT) {
-                return new JsonResponse([
-                    'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
-
-                ], 203);
-            }
-
-            $modePaiement
-                = $this->em->getRepository(ModePaiement::class)->findOneBy(['id' => $data['idModePaiement']]);
-
-
-            if (!$modePaiement) {
-                return new JsonResponse([
-                    'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
-
-                ], 203);
-            }
-            $transaction = [
-                'libelle' => $tyPeT->getLibelle(),
-                'montant' => $montant,
-                "email" => "hari.randoll@gmail.com",
-
-                'nom' => $user->getNom(),
-                // 'image' => 'image',
-                'prenom' => $user->getPrenom(),
-                'numeroClient' => $data['phone'] ?? $user->getPhone(),
-
-                'typeTransaction' => $tyPeT,
-                'client' =>   $user,
-                'modePaiement' => $modePaiement
-            ];
-            $transactionE =  $this->myFunction->addFreeCoin($transaction);
-
-            return $transactionE;
-        } catch (\Exception $e) {
-            // Une erreur s'est produite, annulez la transaction
-            $this->em->rollback();
+        if (empty($data['keySecret'])) {
             return new JsonResponse([
-                'message' => 'Une erreur est survenue'
+                'message' => 'Veuillez renseigner tous les champs'
+
             ], 203);
         }
+        if (empty($data['montant'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez renseigner un montant'
+
+            ], 203);
+        }
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+
+
+        if (!$user) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation'
+
+            ], 203);
+        }
+        $montant
+            = $data['montant'];
+
+
+
+        $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
+
+        if (!$compte) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+
+        $tyPeT
+            = $this->em->getRepository(TypeTransaction::class)->findOneBy(['id' => 3]);
+        if (!$tyPeT) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+
+        $modePaiement
+            = $this->em->getRepository(ModePaiement::class)->findOneBy(['id' => $data['idModePaiement']]);
+
+
+        if (!$modePaiement) {
+            return new JsonResponse([
+                'message' => 'Vous ne pouvez pas poursuivre l\'operation, veuillez joindre un gestionnaire'
+
+            ], 203);
+        }
+        $transaction = [
+            'libelle' => $tyPeT->getLibelle(),
+            'montant' => $montant,
+            "email" => "hari.randoll@gmail.com",
+
+            'nom' => $user->getNom(),
+            // 'image' => 'image',
+            'prenom' => $user->getPrenom(),
+            'numeroClient' => $data['phone'] ?? $user->getPhone(),
+
+            'typeTransaction' => $tyPeT,
+            'client' =>   $user,
+            'modePaiement' => $modePaiement
+        ];
+        $transactionE =  $this->myFunction->addFreeCoin($transaction);
+
+        return $transactionE;
+        // } catch (\Exception $e) {
+        //     // Une erreur s'est produite, annulez la transaction
+        //     $this->em->rollback();
+        //     return new JsonResponse([
+        //         'message' => 'Une erreur est survenue'
+        //     ], 203);
+        // }
     }
 
 
@@ -438,6 +438,7 @@ class TransactionController extends AbstractController
                     );
 
                     $this->em->flush();
+
                     return new JsonResponse([
                         'status'
                         => true,

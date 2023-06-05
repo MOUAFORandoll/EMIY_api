@@ -139,6 +139,12 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: NotationProduit::class)]
     private Collection $notationProduits;
+
+    #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: NegociationProduit::class)]
+    private Collection $negociationProduits;
+
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: AbonnementBoutique::class)]
+    private Collection $abonnementBoutiques;
  
 
     public function __construct()
@@ -154,6 +160,8 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->localisations = new ArrayCollection();
         $this->historiquePaiements = new ArrayCollection();
         $this->notationProduits = new ArrayCollection();
+        $this->negociationProduits = new ArrayCollection();
+        $this->abonnementBoutiques = new ArrayCollection();
        
     }
 
@@ -585,6 +593,66 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($notationProduit->getClient() === $this) {
                 $notationProduit->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, NegociationProduit>
+     */
+    public function getNegociationProduits(): Collection
+    {
+        return $this->negociationProduits;
+    }
+
+    public function addNegociationProduit(NegociationProduit $negociationProduit): self
+    {
+        if (!$this->negociationProduits->contains($negociationProduit)) {
+            $this->negociationProduits->add($negociationProduit);
+            $negociationProduit->setInitiateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNegociationProduit(NegociationProduit $negociationProduit): self
+    {
+        if ($this->negociationProduits->removeElement($negociationProduit)) {
+            // set the owning side to null (unless already changed)
+            if ($negociationProduit->getInitiateur() === $this) {
+                $negociationProduit->setInitiateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, AbonnementBoutique>
+     */
+    public function getAbonnementBoutiques(): Collection
+    {
+        return $this->abonnementBoutiques;
+    }
+
+    public function addAbonnementBoutique(AbonnementBoutique $abonnementBoutique): self
+    {
+        if (!$this->abonnementBoutiques->contains($abonnementBoutique)) {
+            $this->abonnementBoutiques->add($abonnementBoutique);
+            $abonnementBoutique->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAbonnementBoutique(AbonnementBoutique $abonnementBoutique): self
+    {
+        if ($this->abonnementBoutiques->removeElement($abonnementBoutique)) {
+            // set the owning side to null (unless already changed)
+            if ($abonnementBoutique->getClient() === $this) {
+                $abonnementBoutique->setClient(null);
             }
         }
 

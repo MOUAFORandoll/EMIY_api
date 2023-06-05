@@ -26,6 +26,9 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\Entity\UserPlateform;
 use App\FunctionU\MyFunction;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Knp\Component\Pager\Pagination\PaginationInterface;
+use Knp\Component\Pager\PaginatorInterface;
+
 
 class ProduitController extends AbstractController
 {
@@ -35,14 +38,17 @@ class ProduitController extends AbstractController
     private   $serializer;
     private $clientWeb;
     private $myFunction;
+    private $paginator;
     public function __construct(
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         HttpClientInterface $clientWeb,
 
-        MyFunction  $myFunction
+        MyFunction  $myFunction,
 
+        PaginatorInterface $paginator
     ) {
+        $this->paginator = $paginator;
         $this->em = $em;
         $this->serializer = $serializer;
         $this->myFunction = $myFunction;
@@ -101,6 +107,7 @@ class ProduitController extends AbstractController
 
         $data = [
             'keySecret' => $request->get('keySecret'),
+            'negociable' => $request->get('negociable'),
             'titre' => $request->get('titre'),
             'description' => $request->get('description'),
             'prixUnitaire' => $request->get('prixUnitaire'),
@@ -138,6 +145,7 @@ class ProduitController extends AbstractController
         if ($boutique->getUser() ==  $user) {
             $produit = new Produit();
             $produit->setTitre($data['titre'] ?? '');
+            $produit->setNegociable($data['negociable'] ?? false);
             $produit->setDescription($data['description'] ?? '');
             $produit->setQuantite($data['quantite'] ?? 1000);
             $produit->setTaille($data['taille'] ?? 0);
@@ -291,6 +299,7 @@ class ProduitController extends AbstractController
                     'quantite' => $produit->getQuantite(),
                     'prix' => $produit->getPrixUnitaire(),
                     'status' => $produit->isStatus(),
+                    'negociable' => $produit->isNegociable(),
                     // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
                     'images' => $lsImgP
 
@@ -341,63 +350,52 @@ class ProduitController extends AbstractController
     {
 
         $pagination = 10;
-        $lProduit = $this->em->getRepository(Produit::class)->findAll();
+        $result = $this->em->getRepository(Produit::class)->findAll();
+        $lProduit = $this->paginator->paginate($result, $index, 12);
         $lP = [];
         if ($lProduit) {
-            for ($i = 1; $i < (count($lProduit) < $pagination ? count($lProduit) : $pagination); $i++) {
-                $indexP = $index +
-                    $i;
-                if (isset($lProduit[$indexP])) {
-                    $produit = $lProduit[$indexP];
+            foreach ($lProduit as $produit) {
 
-                    if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                        $lsImgP = [];
-                        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                        foreach ($lProduitO  as $produit0) {
-                            $lsImgP[]
-                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
-                        }
-
-
-
-                        $produitU =  [
-                            'id' => $produit->getId(),
-                            'codeProduit' => $produit->getCodeProduit(),
-                            'boutique' => $produit->getBoutique()->getTitre(),
-                            'description' => $produit->getDescription(),
-                            'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
-                            'quantite' => $produit->getQuantite(),
-                            'prix' => $produit->getPrixUnitaire(),
-                            'status' => $produit->isStatus(),
-                            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                            'images' => $lsImgP
-
-                        ];
-                        array_push($lP, $produitU);
+                if ($produit->isStatus() && $produit->getQuantite() > 0) {
+                    $lsImgP = [];
+                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                    foreach ($lProduitO  as $produit0) {
+                        $lsImgP[]
+                            = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
                     }
+
+
+
+                    $produitU =  [
+                        'id' => $produit->getId(),
+                        'codeProduit' => $produit->getCodeProduit(),
+                        'boutique' => $produit->getBoutique()->getTitre(),
+                        'description' => $produit->getDescription(),
+                        'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
+                        'quantite' => $produit->getQuantite(),
+                        'prix' => $produit->getPrixUnitaire(),
+                        'status' => $produit->isStatus(),
+                        // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                        'images' => $lsImgP
+
+                    ];
+                    array_push($lP, $produitU);
                 }
             }
-            // $listProduits = $serializer->serialize($lP, 'json');
-
-            return
-                new JsonResponse(
-                    [
-                        'data'
-                        =>  $lP,
-
-                        'statusCode' => 200
-
-                    ],
-                    200
-                );
-        } else {
-            return
-                new JsonResponse([
-                    'data'
-                    => [],
-                    'message' => 'Aucun produit'
-                ], 203);
         }
+        // $listProduits = $serializer->serialize($lP, 'json');
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $lP,
+
+                    'statusCode' => 200
+
+                ],
+                200
+            );
     }
 
     /**
@@ -420,95 +418,88 @@ class ProduitController extends AbstractController
     {
 
 
-        $lProduit = $this->em->getRepository(Produit::class)->findAll();
+        $result = $this->em->getRepository(Produit::class)->findAll();
+        $lProduit = $this->paginator->paginate($result, $index, 12);
         $lP = [];
-        if ($lProduit) {
-            for ($i = 0; $i < 10; $i++) {
-                $indexP = $index +
-                    $i;
-                if ($indexP < count($lProduit)) {
-                    $produit = $lProduit[$indexP];
 
-                    if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                        $lsImgP = [];
-                        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                        foreach ($lProduitO  as $produit0) {
-                            $lsImgP[]
-                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
-                        }
+        foreach ($lProduit as $produit) {
+            # code... 
 
-
-
-                        $produitU =  [
-                            'id' => $produit->getId(),
-                            'note' => $this->myFunction->noteProduit($produit->getId()),
-                            'codeProduit' => $produit->getCodeProduit(),
-                            'boutique' => $produit->getBoutique()->getTitre(),
-                            'description' => $produit->getDescription(),
-                            'titre' => $produit->getTitre(),
-                            'quantite' => $produit->getQuantite(),
-                            'prix' => $produit->getPrixUnitaire(),
-                            'status' => $produit->isStatus(),
-                            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                            'images' => $lsImgP
-
-                        ];
-                        array_push($lP, $produitU);
-                    }
+            if ($produit->isStatus() && $produit->getQuantite() > 0) {
+                $lsImgP    = [];
+                $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                foreach ($lProduitO as $produit0) {
+                    $lsImgP[]
+                        = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
                 }
+
+
+
+                $produitU = [
+                    'id' => $produit->getId(),
+                    'note' => $this->myFunction->noteProduit($produit->getId()),
+                    'codeProduit' => $produit->getCodeProduit(),
+                    'boutique' => $produit->getBoutique()->getTitre(),
+                    'description' => $produit->getDescription(),
+                    'titre' => $produit->getTitre(),
+                    'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+                    'quantite' => $produit->getQuantite(),
+                    'prix' => $produit->getPrixUnitaire(),
+                    'status' => $produit->isStatus(),
+                    // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                    'images' => $lsImgP
+
+                ];
+                array_push($lP, $produitU);
             }
-            if (count($lP) % 2 != 0) {
-                $indexP  = 0;
-                $produit = $lProduit[$indexP];
-
-                if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                    $lsImgP = [];
-                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    foreach ($lProduitO  as $produit0) {
-                        $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
-                    }
+            // }
 
 
+            // if (count($lP) % 2 != 0) {
+            //     $indexP  = 0;
+            //     $produit = $lProduit[$indexP];
 
-                    $produitU =  [
-                        'id' => $produit->getId(),
-                        'note' => $this->myFunction->noteProduit($produit->getId()),
-                        'codeProduit' => $produit->getCodeProduit(),
-                        'boutique' => $produit->getBoutique()->getTitre(),
-                        'description' => $produit->getDescription(),
-                        'titre' => $produit->getTitre(),
-                        'quantite' => $produit->getQuantite(),
-                        'prix' => $produit->getPrixUnitaire(),
-                        'status' => $produit->isStatus(),
-                        // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                        'images' => $lsImgP
+            //     if ($produit->isStatus() && $produit->getQuantite() > 0) {
+            //         $lsImgP = [];
+            //         $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+            //         foreach ($lProduitO  as $produit0) {
+            //             $lsImgP[]
+            //                 = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+            //         }
 
-                    ];
-                    array_push($lP, $produitU);
-                }
-            }
+
+
+            //         $produitU =  [
+            //             'id' => $produit->getId(),
+            //             'note' => $this->myFunction->noteProduit($produit->getId()),
+            //             'codeProduit' => $produit->getCodeProduit(),
+            //             'boutique' => $produit->getBoutique()->getTitre(),
+            //             'description' => $produit->getDescription(),
+            //             'titre' => $produit->getTitre(),
+            //                     'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+            //             'quantite' => $produit->getQuantite(),
+            //             'prix' => $produit->getPrixUnitaire(),
+            //             'status' => $produit->isStatus(),
+            //             // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+            //             'images' => $lsImgP
+
+            //         ];
+            //         array_push($lP, $produitU);
+            //     }
+            // }
             // $listProduits = $serializer->serialize($lP, 'json');
-
-            return
-                new JsonResponse(
-                    [
-                        'data'
-                        =>  $lP,
-
-                        'statusCode' => 200
-
-                    ],
-                    200
-                );
-        } else {
-            return
-                new JsonResponse([
-                    'data'
-                    => [],
-                    'message' => 'Aucun produit'
-                ], 203);
         }
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    => $lP,
+
+                    'statusCode' => 200
+
+                ],
+                200
+            );
     }
 
 
@@ -568,7 +559,7 @@ class ProduitController extends AbstractController
                             'user' => $produit->getUser()->getNom() . ' ' . $produit->getUser()->getPrenom(),
                             'description' => $produit->getDescription(),
                             'titre' => $produit->getTitre(),
-                            'quantite' => $produit->getQuantite(),
+                            'negociable' => $produit->isNegociable(),  'quantite' => $produit->getQuantite(),
                             'prix' => $produit->getPrixUnitaire(),
                             'status' => $produit->isStatus(),
                             'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0

@@ -31,17 +31,20 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\FunctionU\MyFunction;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Knp\Component\Pager\PaginatorInterface;
 
 class ShortController extends AbstractController
 {
 
     private $em;
     private   $serializer;
+    private $paginator;
     private $clientWeb;
     private $myFunction;
     public function __construct(
         SerializerInterface $serializer,
         EntityManagerInterface $em,
+        PaginatorInterface $paginator,
         HttpClientInterface $clientWeb,
         MyFunction
         $myFunction
@@ -50,6 +53,7 @@ class ShortController extends AbstractController
         $this->em = $em;
         $this->serializer = $serializer;
         $this->myFunction = $myFunction;
+        $this->paginator = $paginator;
 
         $this->clientWeb = $clientWeb;
     }
@@ -79,84 +83,82 @@ class ShortController extends AbstractController
 
         $lShortF = [];
 
-        $lShort = $this->em->getRepository(Short::class)->findAll();
-
-        for ($i = 1; $i < (count($lShort) < $pagination ? count($lShort) : $pagination); $i++) {
-            $indexP = $index +
-                $i;
-            if (isset($lShort[$indexP])) {
-                $short = $lShort[$indexP];
-
-                $boutique = $short->getBoutique();
-
-                if ($boutique) {
+        $result = $this->em->getRepository(Short::class)->findAll();
+        $lShort = $this->paginator->paginate($result, $index, 12);
+        foreach ($lShort as $short) {
 
 
 
-                    if ($boutique->isStatus()) {
-                        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                        $limgB = [];
+            $boutique = $short->getBoutique();
 
-                        foreach ($lBo  as $bo) {
-                            $limgB[]
-                                = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
-                        }
-                        if (empty($limgB)) {
-                            $limgB[]
-                                = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
-                        }
-                        $boutiqueU =  [
-                            'codeBoutique' => $boutique->getCodeBoutique(),
-                            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                            'description' => $boutique->getDescription() ?? "Aucune",
-                            'titre' => $boutique->getTitre() ?? "Aucun",
-                            'status' => $boutique->isStatus(),
-                            'note' => $this->myFunction->noteBoutique($boutique->getId()),
+            if ($boutique) {
 
-                            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                            'images' => $limgB,
-                            'localisation' =>  $boutique->getLocalisation() ? [
-                                'ville' =>
-                                $boutique->getLocalisation()->getVille(),
 
-                                'longitude' =>
-                                $boutique->getLocalisation()->getLongitude(),
-                                'latitude' =>
-                                $boutique->getLocalisation()->getLatitude(),
-                            ] : [
-                                'ville' =>
-                                'incertiane',
 
-                                'longitude' =>
-                                0.0,
-                                'latitude' =>
-                                0.0,
-                            ]
-                        ];
+                if ($boutique->isStatus()) {
+                    $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                    $limgB = [];
+
+                    foreach ($lBo  as $bo) {
+                        $limgB[]
+                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
                     }
+                    if (empty($limgB)) {
+                        $limgB[]
+                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                    }
+                    $boutiqueU =  [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' =>  $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
 
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
 
-
-                    $shortF =  [
-
-                        'id' => $short->getId(),
-                        'titre' => $short->getTitre() ?? "Aucun",
-                        'description' => $short->getDescription() ?? "Aucun",
-                        'status' => $short->isStatus(),
-                        'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
-                        'date' =>
-                        date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                        'boutique' =>  $boutiqueU
-
-
-
-
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
                     ];
-                    array_push($lShortF, $shortF);
                 }
+
+
+
+
+                $shortF =  [
+
+                    'id' => $short->getId(),
+                    'titre' => $short->getTitre() ?? "Aucun",
+                    'description' => $short->getDescription() ?? "Aucun",
+                    'status' => $short->isStatus(),
+                    'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
+                    'date' =>
+                    date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                    'boutique' =>  $boutiqueU
+
+
+
+
+                ];
+                array_push($lShortF, $shortF);
             }
         }
+
 
         return
             new JsonResponse(
@@ -262,92 +264,92 @@ class ShortController extends AbstractController
 
         $this->em->beginTransaction();
         try {
-        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+            // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
-        $possible = false;
-
-
-
-
-        $data = [
-
-            'titre' => $request->get('titre'),
-            'description' => $request->get('description'),
-
-            'codeBoutique' => $request->get('codeBoutique'),
-        ];
-
-        if (
-            empty($data['titre']) || empty($data['description'])
-
-
-            || empty($data['codeBoutique'])
-        ) {
-            return new JsonResponse(
-                [
-                    'message' => 'Verifier votre requette',
-                    // 'data'=> $data
-                ],
-                400
-            );
-        }
-
-        $titre = $data['titre'];
-        $description = $data['description'];
-
-
-        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $data['codeBoutique']]);
-
-        $file = $request->files->get('file');
+            $possible = false;
 
 
 
-        if ($file) {
-            $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            // this is needed to safely include the file name as part of the URL
-            $safeFilenameData = $slugger->slug($originalFilenameData);
-            $newFilenameData =
-                $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
 
-            // Move the file to the directory where brochures are stored
-            try {
+            $data = [
 
-                $file->move(
-                    $this->getParameter('shorts_object'),
-                    $newFilenameData
+                'titre' => $request->get('titre'),
+                'description' => $request->get('description'),
+
+                'codeBoutique' => $request->get('codeBoutique'),
+            ];
+
+            if (
+                empty($data['titre']) || empty($data['description'])
+
+
+                || empty($data['codeBoutique'])
+            ) {
+                return new JsonResponse(
+                    [
+                        'message' => 'Verifier votre requette',
+                        // 'data'=> $data
+                    ],
+                    400
                 );
-                $short = new Short();
-                $short->setSrc($newFilenameData);
-                $short->setTitre($titre);
-                $short->setDescription(
-                    $description
-                );
-                $short->setBoutique($boutique);
-                $this->em->persist($short);
-
-                $imagePresent = true;
-            } catch (FileException $e) {
-                return
-                    new JsonResponse([
-
-                        'status' =>   false,
-                        'message' =>   'Vos fichiers ne sont pas valides'
-
-                    ], 203);
             }
-        }
 
-        $this->em->flush();
+            $titre = $data['titre'];
+            $description = $data['description'];
 
-        return
-            new JsonResponse(
-                [
-                    'message'
-                    =>  'success'
-                ],
-                200
-            );
-    }  catch (\Exception $e) {
+
+            $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $data['codeBoutique']]);
+
+            $file = $request->files->get('file');
+
+
+
+            if ($file) {
+                $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                // this is needed to safely include the file name as part of the URL
+                $safeFilenameData = $slugger->slug($originalFilenameData);
+                $newFilenameData =
+                    $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
+
+                // Move the file to the directory where brochures are stored
+                try {
+
+                    $file->move(
+                        $this->getParameter('shorts_object'),
+                        $newFilenameData
+                    );
+                    $short = new Short();
+                    $short->setSrc($newFilenameData);
+                    $short->setTitre($titre);
+                    $short->setDescription(
+                        $description
+                    );
+                    $short->setBoutique($boutique);
+                    $this->em->persist($short);
+
+                    $imagePresent = true;
+                } catch (FileException $e) {
+                    return
+                        new JsonResponse([
+
+                            'status' =>   false,
+                            'message' =>   'Vos fichiers ne sont pas valides'
+
+                        ], 203);
+                }
+            }
+
+            $this->em->flush();
+
+            return
+                new JsonResponse(
+                    [
+                        'message'
+                        =>  'success'
+                    ],
+                    200
+                );
+        } catch (\Exception $e) {
             // Une erreur s'est produite, annulez la transaction
             $this->em->rollback();
             return new JsonResponse([
