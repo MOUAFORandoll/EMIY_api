@@ -381,7 +381,6 @@ class CommandeController extends AbstractController
         $this->em->flush();
 
         return $this->myFunction->paid($data,  $total,  $commande->getId());
-       
     }
 
 
@@ -687,7 +686,7 @@ class CommandeController extends AbstractController
 
 
     /**
-     * @Route("/commande/boutique/read", name="comandeReadBoutique", methods={"POST"})
+     * @Route("/commande/boutique/read", name="comandeReadBoutique", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -706,15 +705,11 @@ class CommandeController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
-        $possible = false;
-
-
 
 
         if (
             /*     empty($data['keySecret']) || */
-            empty($data['codeBoutique'])
+            empty($request->get('codeBoutique'))
         ) {
             return new JsonResponse(
                 [
@@ -725,7 +720,7 @@ class CommandeController extends AbstractController
         }
 
 
-        $codeBoutique = $data['codeBoutique'];
+        $codeBoutique = $request->get('codeBoutique');
         // $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
         $lP = [];
         $lcom = $this->em->getRepository(Commande::class)->findAll();
@@ -795,7 +790,7 @@ class CommandeController extends AbstractController
     }
 
     /**
-     * @Route("/commande/boutique/readH", name="comandeReadH", methods={"POST"})
+     * @Route("/commande/boutique/readH", name="comandeReadH", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -814,7 +809,7 @@ class CommandeController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
+       
         $possible = false;
 
 
@@ -822,7 +817,7 @@ class CommandeController extends AbstractController
 
         if (
             /*     empty($data['keySecret']) || */
-            empty($data['codeBoutique'])
+            empty($request->get('codeBoutique'))
         ) {
             return new JsonResponse(
                 [
@@ -833,7 +828,8 @@ class CommandeController extends AbstractController
         }
 
 
-        $codeBoutique = $data['codeBoutique'];
+        $codeBoutique = $request->get('codeBoutique');
+
         // $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
 
         $lcom = $this->em->getRepository(Commande::class)->findAll();

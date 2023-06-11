@@ -269,7 +269,8 @@ class ProduitController extends AbstractController
     {
 
         $possible = false;
-
+        // $keySecret = $request->get('keySecret')
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
 
 
@@ -290,7 +291,8 @@ class ProduitController extends AbstractController
 
                 $produit =  [
                     'id' => $produit->getId(),
-                    'note' => $this->myFunction->noteProduit($produit->getId()),
+                    'like' => $this->myFunction->isLike_Produit($produit->getId()),
+                    'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
 
                     'codeProduit' => $produit->getCodeProduit(),
                     'boutique' => $produit->getBoutique()->getTitre(),
@@ -331,7 +333,7 @@ class ProduitController extends AbstractController
 
 
     /** 
-     * @Route("/produit/read/client/{index}", name="produitReadclient", methods={"GET"})
+     * @Route("/produit/read/client", name="produitReadclient", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -346,11 +348,13 @@ class ProduitController extends AbstractController
      * 
      * 
      */
-    public function produitReadclient($index)
+    public function produitReadclient(Request $request, $index)
     {
-
+        $index =
+            $request->get('page');
         $pagination = 10;
         $result = $this->em->getRepository(Produit::class)->findAll();
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
         $lProduit = $this->paginator->paginate($result, $index, 12);
         $lP = [];
         if ($lProduit) {
@@ -371,7 +375,8 @@ class ProduitController extends AbstractController
                         'codeProduit' => $produit->getCodeProduit(),
                         'boutique' => $produit->getBoutique()->getTitre(),
                         'description' => $produit->getDescription(),
-                        'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
+                        'like' => $this->myFunction->isLike_Produit($produit->getId()),     'titre' => $produit->getTitre(),
+                        'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
                         'quantite' => $produit->getQuantite(),
                         'prix' => $produit->getPrixUnitaire(),
                         'status' => $produit->isStatus(),
@@ -399,7 +404,7 @@ class ProduitController extends AbstractController
     }
 
     /**
-     * @Route("/produit/read/popular/{index}", name="produitReadPopular", methods={"GET"})
+     * @Route("/produit/read/popular", name="produitReadPopular", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -414,9 +419,11 @@ class ProduitController extends AbstractController
      * 
      * 
      */
-    public function produitReadPopular($index)
+    public function produitReadPopular(Request $request,)
     {
-
+        $index =
+            $request->get('page');
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $result = $this->em->getRepository(Produit::class)->findAll();
         $lProduit = $this->paginator->paginate($result, $index, 12);
@@ -436,8 +443,10 @@ class ProduitController extends AbstractController
 
 
                 $produitU = [
+
                     'id' => $produit->getId(),
-                    'note' => $this->myFunction->noteProduit($produit->getId()),
+                    'like' => $this->myFunction->isLike_produit($produit->getId()),
+                    'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
                     'codeProduit' => $produit->getCodeProduit(),
                     'boutique' => $produit->getBoutique()->getTitre(),
                     'description' => $produit->getDescription(),
@@ -471,7 +480,7 @@ class ProduitController extends AbstractController
 
             //         $produitU =  [
             //             'id' => $produit->getId(),
-            //             'note' => $this->myFunction->noteProduit($produit->getId()),
+            //             'like' => $this->myFunction->isLike_produitProduit($produit->getId()),
             //             'codeProduit' => $produit->getCodeProduit(),
             //             'boutique' => $produit->getBoutique()->getTitre(),
             //             'description' => $produit->getDescription(),
@@ -551,10 +560,11 @@ class ProduitController extends AbstractController
 
             if ($boutique->getUser() ==  $user) {
                 $lP = [];
-                foreach ($boutique->getProduit()  as $produit) {
+                foreach ($boutique->getProduits()  as $produit) {
                     if ($produit->isStatus() && $produit->getQuantite() > 0) {
                         $produit =  [
-                            'note' => $this->myFunction->noteProduit($produit->getId()),
+                            'like' => $this->myFunction->isLike_Produit($produit->getId()),
+                            // isLike =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
                             'codeProduit' => $produit->getCodeProduit(),
                             'user' => $produit->getUser()->getNom() . ' ' . $produit->getUser()->getPrenom(),
                             'description' => $produit->getDescription(),

@@ -8,14 +8,17 @@ use App\Entity\Boutique;
 use App\Entity\ListProduitPromotion;
 use App\Entity\ModePaiement;
 use App\Entity\NotationBoutique;
-use App\Entity\NotationProduit;
+use App\Entity\LikeProduit;
 use App\Entity\Place;
 use App\Entity\Produit;
+use App\Entity\ProduitObject;
 use App\Entity\Promotion;
 use App\Entity\Transaction;
 use App\Entity\TypeUser;
+use App\FunctionU\MyFunction;
 use DateTime;
 use FFI\Exception;
+use SebastianBergmann\Type\TrueType;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -38,27 +41,30 @@ use App\Entity\UserPlateform;
 class NotationController  extends AbstractController
 {
 
+    private $myFunction;
 
     private $em;
     public function __construct(
 
         EntityManagerInterface $em,
+        MyFunction  $myFunction,
 
     ) {
+        $this->myFunction = $myFunction;
         $this->em = $em;
     }
 
 
     /**
-     * @Route("/notation/produit", name="NotationProduitNew", methods={"POST"})
+     * @Route("/like/produit", name="LikeProduitNew", methods={"POST"})
       
      * @param Request $request
      * @return JsonResponse
      */
-    public function NotationProduitNew(Request $request)
+    public function LikeProduitNew(Request $request)
     {
         $data = $request->toArray();
-        if (empty($data['codeProduit']) || empty($data['note']) || empty($data['keySecret'])) {
+        if (empty($data['codeProduit'])  || empty($data['keySecret'])) {
             return new JsonResponse([
                 'message' => 'Veuillez recharger la page et reessayer'
             ], 400);
@@ -70,29 +76,24 @@ class NotationController  extends AbstractController
 
             ], 203);
         }
-        if ($data['note'] < 0 || $data['note'] > 5) {
-            return new JsonResponse([
-                'message' => 'UNe erreur est survenue'
 
-            ], 203);
-        }
 
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
 
 
         if ($user) {
 
-            $existNote = $this->em->getRepository(NotationProduit::class)->findOneBy(['produit' => $produit, 'client' => $user]);
+            $existNote = $this->em->getRepository(LikeProduit::class)->findOneBy(['produit' => $produit, 'client' => $user]);
             if ($existNote) {
 
-                $existNote->setNote($data['note']);
+                $existNote->setLike_produit(!$existNote->isLike_produit());
                 $this->em->persist($existNote);
             } else {
-                $note = new NotationProduit();
+                $note = new LikeProduit();
 
                 $note->setProduit($produit);
                 $note->setClient($user);
-                $note->setNote($data['note']);
+                // $note->setLike_produit(1);
                 $this->em->persist($note);
             }
 
@@ -100,10 +101,32 @@ class NotationController  extends AbstractController
 
 
             $this->em->flush();
+            $lsImgP    = [];
+            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+            foreach ($lProduitO as $produit0) {
+                $lsImgP[]
+                    = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+            }
+            $produitU = [
 
+                'id' => $produit->getId(),
+                'like' => $this->myFunction->isLike_produit($produit->getId()),
+                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
+                'codeProduit' => $produit->getCodeProduit(),
+                'boutique' => $produit->getBoutique()->getTitre(),
+                'description' => $produit->getDescription(),
+                'titre' => $produit->getTitre(),
+                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+                'quantite' => $produit->getQuantite(),
+                'prix' => $produit->getPrixUnitaire(),
+                'status' => $produit->isStatus(),
+                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                'images' => $lsImgP
+
+            ];
             return new JsonResponse([
-                'message' => 'Note ajoute.',
-
+                'message' => 'Like ajoute.',
+                'produit' =>  $produitU
 
             ], 200);
         } else {

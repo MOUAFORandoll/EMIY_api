@@ -1,32 +1,32 @@
 <?php
-// src/Entity/NotationProduit.php
+// src/Entity/LikeProduit.php
 
 namespace App\Entity;
 
-use App\Repository\NotationProduitRepository;
+use App\Repository\LikeProduitRepository;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: NotationProduitRepository::class)]
-class NotationProduit
+#[ORM\Entity(repositoryClass: LikeProduitRepository::class)]
+class LikeProduit
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
     private $id;
 
-    #[ORM\Column(type: "float")]
-    private $note;
+    #[ORM\Column(type: "boolean")]
+    private $like_produit;
 
     #[ORM\Column(type: "date")]
 
     private $dateCreated;
 
-    #[ORM\ManyToOne(inversedBy: 'notationProduits')]
+    #[ORM\ManyToOne(inversedBy: 'LikeProduits')]
     private ?UserPlateform $client = null;
 
-    #[ORM\ManyToOne(inversedBy: 'notationProduits')]
+    #[ORM\ManyToOne(inversedBy: 'LikeProduits')]
     private ?Produit $produit = null;
 
 
@@ -34,6 +34,7 @@ class NotationProduit
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
+        $this->like_produit = true;
     }
 
     public function getId(): ?int
@@ -53,14 +54,14 @@ class NotationProduit
         return $this;
     }
 
-    public function getNote(): ?float
+    public function isLike_produit(): ?bool
     {
-        return $this->note;
+        return $this->like_produit;
     }
 
-    public function setNote(float $note): self
+    public function setLike_produit(bool $like_produit): self
     {
-        $this->note = $note;
+        $this->like_produit = $like_produit;
 
         return $this;
     }

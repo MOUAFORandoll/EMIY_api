@@ -12,10 +12,11 @@ use App\Entity\ListProduitPanier;
 use App\Entity\Localisation;
 use App\Entity\NegociationProduit;
 use App\Entity\NotationBoutique;
-use App\Entity\NotationProduit;
+use App\Entity\LikeProduit;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Transaction;
+use App\Entity\UserPlateform;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Swift_Mailer;
@@ -444,20 +445,27 @@ class MyFunction
         $this->em->flush();
         return   $paiement->getId();
     }
-    public function noteProduit($id)
+    public function isLike_Produit($id)
     {
         $produit = $this->em->getRepository(Produit::class)->findOneBy(['id' => $id]);
-        $notes = $this->em->getRepository(NotationProduit::class)->findBy(['produit' => $produit]);
+        $notes = $this->em->getRepository(LikeProduit::class)->findBy(['produit' => $produit, 'like_produit' => true]);
         $noteL   = 0;
-        foreach ($notes as   $note) {
-            $noteL += $note->getNote();
+        // foreach ($notes as   $note) {
+        //     $noteL += $note->isLike_produit();
 
 
-            # code...
-        }
+        //     # code...
+        // }
         return
 
-            count($notes) != 0 ?   $noteL / count($notes) : 0.0;
+            count($notes) /* != 0 ?   count($notes) : 0.0 */;
+    }
+    public function userlikeProduit(int $id, UserPlateform $user)
+    {
+        $produit = $this->em->getRepository(Produit::class)->findOneBy(['id' => $id]);
+        $notes = $this->em->getRepository(LikeProduit::class)->findBy(['produit' => $produit, 'like_produit' => true, 'client' => $user]);
+
+        return ($notes != null) ? true : false;
     }
     public function noteBoutique($id)
     {
@@ -465,7 +473,7 @@ class MyFunction
         $notes = $this->em->getRepository(NotationBoutique::class)->findBy(['boutique' => $boutique]);
         $noteL   = 0;
         foreach ($notes as   $note) {
-            $noteL += $note->getNote();
+            $noteL += $note->isLike_produit();
 
 
             # code...
@@ -631,7 +639,7 @@ class MyFunction
     //negociation
 
 
-    public function Socekt_Emit($canal,$data)
+    public function Socekt_Emit($canal, $data)
     {
 
 

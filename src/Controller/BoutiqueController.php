@@ -536,7 +536,7 @@ class BoutiqueController extends AbstractController
     }
 
     /**
-     * @Route("/boutique/read/user", name="boutiqueReadForUser", methods={"POST"})
+     * @Route("/boutique/read/user", name="boutiqueReadForUser", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -555,15 +555,15 @@ class BoutiqueController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
+
         $possible = false;
-        if (empty($data['keySecret'])) {
+        if (empty($request->get('keySecret'))) {
 
             return new JsonResponse([
                 'message' => 'Veuillez recharger la page et reessayerveuillez preciser votre keySecret '
             ], 400);
         }
-        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
         if ($user) {
 
 
@@ -809,7 +809,7 @@ class BoutiqueController extends AbstractController
         }
     }
     /**
-     * @Route("/boutique/read/produit", name="boutiqueReadProduit", methods={"POST"})
+     * @Route("/boutique/read/produit", name="boutiqueReadProduit", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -827,13 +827,16 @@ class BoutiqueController extends AbstractController
     public function boutiqueReadProduit(Request $request)
     {
 
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
+
         $possible = false;
 
         if (
             /*     empty($data['keySecret']) || */
-            empty($data['codeBoutique'])
+            empty($request->get('codeBoutique'))
         ) {
             return new JsonResponse(
                 [
@@ -844,7 +847,7 @@ class BoutiqueController extends AbstractController
         }
 
 
-        $codeBoutique = $data['codeBoutique'];
+        $codeBoutique = $request->get('codeBoutique');
 
 
 
@@ -867,9 +870,11 @@ class BoutiqueController extends AbstractController
                         'prix' => $produit->getPrixUnitaire(),
                         'description' => $produit->getDescription(),
                         'status' => $produit->isStatus(),
-                        'negociable' => $produit->isNegociable(), 'note' => $this->myFunction->noteProduit($produit->getId()),     'titre' => $produit->getTitre(),
+                        'like' => $this->myFunction->isLike_Produit($produit->getId()),
+                        'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
+
                         'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                        'description' => $produit->getDescription(),
+                        'negociable' => $produit->isNegociable(),
                         'images' => $lsImgP
                     ];
                 }

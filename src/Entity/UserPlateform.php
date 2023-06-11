@@ -137,15 +137,15 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: HistoriquePaiement::class, mappedBy: "user")]
     private $historiquePaiements;
 
-    #[ORM\OneToMany(mappedBy: 'client', targetEntity: NotationProduit::class)]
-    private Collection $notationProduits;
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: LikeProduit::class)]
+    private Collection $LikeProduits;
 
     #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: NegociationProduit::class)]
     private Collection $negociationProduits;
 
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: AbonnementBoutique::class)]
     private Collection $abonnementBoutiques;
- 
+
 
     public function __construct()
     {
@@ -159,10 +159,9 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->comptes = new ArrayCollection();
         $this->localisations = new ArrayCollection();
         $this->historiquePaiements = new ArrayCollection();
-        $this->notationProduits = new ArrayCollection();
+        $this->LikeProduits = new ArrayCollection();
         $this->negociationProduits = new ArrayCollection();
         $this->abonnementBoutiques = new ArrayCollection();
-       
     }
 
     public function getId(): ?int
@@ -570,29 +569,29 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, NotationProduit>
+     * @return Collection<int, LikeProduit>
      */
-    public function getNotationProduits(): Collection
+    public function isLike_produitProduits(): Collection
     {
-        return $this->notationProduits;
+        return $this->LikeProduits;
     }
 
-    public function addNotationProduit(NotationProduit $notationProduit): self
+    public function addLikeProduit(LikeProduit $LikeProduit): self
     {
-        if (!$this->notationProduits->contains($notationProduit)) {
-            $this->notationProduits->add($notationProduit);
-            $notationProduit->setClient($this);
+        if (!$this->LikeProduits->contains($LikeProduit)) {
+            $this->LikeProduits->add($LikeProduit);
+            $LikeProduit->setClient($this);
         }
 
         return $this;
     }
 
-    public function removeNotationProduit(NotationProduit $notationProduit): self
+    public function removeLikeProduit(LikeProduit $LikeProduit): self
     {
-        if ($this->notationProduits->removeElement($notationProduit)) {
+        if ($this->LikeProduits->removeElement($LikeProduit)) {
             // set the owning side to null (unless already changed)
-            if ($notationProduit->getClient() === $this) {
-                $notationProduit->setClient(null);
+            if ($LikeProduit->getClient() === $this) {
+                $LikeProduit->setClient(null);
             }
         }
 
@@ -658,5 +657,4 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
- 
 }

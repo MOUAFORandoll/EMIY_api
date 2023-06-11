@@ -481,7 +481,7 @@ class CategoryController extends AbstractController
 
 
     /**
-     * @Route("/category/read/boutique", name="categoryReadBoutique", methods={"POST"})
+     * @Route("/category/read/boutique", name="categoryReadBoutique", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -500,31 +500,24 @@ class CategoryController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
+
         $possible = false;
 
 
+        if (empty($request->get('id'))) {
 
-
-        if (
-            /*    empty($data['keySecret']) ||  */
-            empty($data['id'])
-        ) {
-            return new JsonResponse(
-                [
-                    'message' => 'Veuillez recharger la page et reessayer   '
-                ],
-                400
-            );
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page   '
+            ], 400);
         }
 
-        $id = $data['id'];
+        $id = $request->get('id');
         $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $id]);
 
         $boutiques = $this->em->getRepository(Boutique::class)->findBy(['category' => $category]);
 
         if ($boutiques) {
- 
+
             $lB = [];
             foreach ($boutiques   as $boutique) {
                 if ($boutique->isStatus()) {

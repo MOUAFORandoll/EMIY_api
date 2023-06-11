@@ -23,12 +23,12 @@ class NotationBoutique
 
     private $dateCreated;
 
-    #[ORM\ManyToOne(inversedBy: 'notationProduits')]
+    #[ORM\ManyToOne(inversedBy: 'LikeProduits')]
     private ?UserPlateform $client = null;
 
     #[ORM\ManyToOne(inversedBy: 'notationBoutiques')]
     private ?Boutique $boutique = null;
- 
+
 
 
 
@@ -54,7 +54,7 @@ class NotationBoutique
         return $this;
     }
 
-    public function getNote(): ?float
+    public function isLike_produit(): ?float
     {
         return $this->note;
     }
@@ -89,5 +89,4 @@ class NotationBoutique
 
         return $this;
     }
- 
 }
