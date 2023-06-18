@@ -27,9 +27,9 @@ COPY . /var/www/html
 # Installer les dépendances de l'application
 RUN composer install --prefer-dist --no-interaction --no-progress
 
-RUN mkdir migrations
-RUN chmod 777 migrations.sh
-RUN  ./migrations.sh
+# RUN mkdir migrations
+# RUN chmod 777 migrations.sh
+# RUN  ./migrations.sh
 # Fixer les permissions des fichiers Symfony
 RUN chown -R www-data:www-data var
 
