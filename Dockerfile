@@ -24,8 +24,8 @@ WORKDIR /var/www/html
 # Copier les fichiers de l'application dans le conteneur
 COPY . /var/www/html
 
-# Installer les dépendances de l'application
-RUN composer install --prefer-dist --no-interaction --no-progress
+# Installer les dépendances de l'application 
+RUN composer install --prefer-dist --no-interaction --no-progress --ignore-platform-req=ext-curl
 
 # RUN mkdir migrations
 # RUN chmod 777 migrations.sh
