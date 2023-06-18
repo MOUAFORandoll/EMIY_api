@@ -31,7 +31,7 @@ RUN composer install --prefer-dist --no-interaction --no-progress --ignore-platf
 # RUN chmod 777 migrations.sh
 # RUN  ./migrations.sh
 # Fixer les permissions des fichiers Symfony
-RUN chown -R www-data:www-data var
+# RUN chown -R www-data:www-data var
 
 # Port d'écoute de Nginx
 EXPOSE 80
