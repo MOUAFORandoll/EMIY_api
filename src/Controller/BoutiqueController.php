@@ -428,44 +428,17 @@ class BoutiqueController extends AbstractController
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
-        $possible = false;
-
-
-
 
 
         $lBoutique = $this->em->getRepository(Boutique::class)->findAll();
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         if ($lBoutique) {
 
             $lB = [];
             foreach ($lBoutique  as $boutique) {
                 if ($boutique->getUser()) {
-                    // $listProduit = [];
-                    // foreach ($boutique->getProduits()  as $produit) {
-                    //     if ($produit->isStatus()) {
-                    //         $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    //         $lsImgP = [];
 
-                    //         foreach ($lProduitO  as $produit0) {
-                    //             $lsImgP[]
-                    //                 = ['id' => $produit0->getId(), 'src' => $_SERVER['SYMFONY_DEFAULT_ROUTE_URL'] . 'images/produits/' . $produit0->getSrc()];
-                    //         }
-                    //         $listProduit[] = [
-                    //             'id' => $produit->getId(),
-                    //             'codeProduit' => $produit->getCodeProduit(),
-                    //             'boutique' => $produit->getBoutique()->getTitre(),
-                    //             'description' => $produit->getDescription(),
-                    //             'titre' => $produit->getTitre(),
-                    //             'quantite' => $produit->getQuantite(),
-                    //             'prix' => $produit->getPrixUnitaire(),
-                    //             'status' => $produit->isStatus(),
-                    //             // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                    //             'images' => $lsImgP
-
-                    //         ];
-                    //     }
-                    // }
                     $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                     $limgB = [];
 
@@ -486,6 +459,7 @@ class BoutiqueController extends AbstractController
                             'titre' => $boutique->getTitre() ?? "Aucun",
                             'status' => $boutique->isStatus(),
                             'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                            'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
 
                             'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                             'images' => $limgB,

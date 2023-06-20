@@ -510,6 +510,7 @@ class CategoryController extends AbstractController
                 'message' => 'Veuillez recharger la page   '
             ], 400);
         }
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $id = $request->get('id');
         $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $id]);
@@ -539,6 +540,7 @@ class CategoryController extends AbstractController
                         'titre' => $boutique->getTitre() ?? "Aucun",
                         'status' => $boutique->isStatus(),
                         'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
 
                         'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                         'images' => $limgB,

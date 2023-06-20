@@ -25,6 +25,9 @@
 
 ###> symfony/webpack-encore-bundle ###
 /node_modules/
+/emiy_socket_serveur/node_modules/ 
+/emiy_stream_server/node_modules/ 
+/emiy_stream_server/video/ 
 /public/bundles/
 /public/factures/
 /public/images/

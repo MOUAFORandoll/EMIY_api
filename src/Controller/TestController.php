@@ -16,6 +16,9 @@ use Lcobucci\JWT\Encoder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -36,6 +39,9 @@ use Dompdf\Dompdf;
 
 use ElephantIO\Client;
 use ElephantIO\Engine\SocketIO;
+
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class TestController extends AbstractController
 {
@@ -709,5 +715,86 @@ class TestController extends AbstractController
             =>   $data
 
         ]);
+    }
+
+    /**
+     * @Route("/video-stream", name="video_stream")
+     */
+    public function videoStreamAction(Request $request)
+    {
+        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/produitZt0RX.mp4';
+
+        $segment = $request->query->get('segment');
+        // $segmentPath = $videoPath . '/' . $segment;
+        $videoSize = filesize($videoPath);
+        $videoMimeType = mime_content_type($videoPath);
+
+        // Créez une réponse en streaming
+        $response = new StreamedResponse(function () use ($videoPath) {
+            // Ouvrez le fichier vidéo en mode lecture binaire
+            $file = fopen($videoPath, 'rb');
+
+            // Écrivez les données en streaming
+            while (!feof($file)) {
+                echo fread($file, 10);
+                flush();
+            }
+
+            // Fermez le fichier
+            fclose($file);
+        });
+
+        // Définissez les en-têtes de réponse appropriés pour le streaming vidéo
+        $response->headers->set('Content-Type', $videoMimeType);
+        $response->headers->set('Content-Length', $videoSize);
+        $response->headers->set('Accept-Ranges', 'bytes');
+
+        return $response;
+    }
+    /**
+     * @Route("/video", name="stream_video")
+     */
+    public function streamVideo(Request $request,)
+    {
+        $listVideoShort = [];
+        $sourceDirShort = 'videos/shorts';
+        $filesShort  = scandir($sourceDirShort);
+        foreach ($filesShort  as $file) {
+            var_dump($file);
+            $this->Convert($file);
+            // if ($file != '.' && $file != '..')
+            //     $listVideoShort[] = $file;
+        }
+
+
+
+
+
+        return new Response('Segment vidéo non trouvé', Response::HTTP_NOT_FOUND);
+    }
+
+
+    function Convert($o)
+    {
+
+        $originalVideoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;
+        $convertedVideoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/segments/' .  $o;
+
+        $ffmpegCommand = sprintf(
+            'ffmpeg -i %s -c:v copy -c:a copy -movflags faststart %s',
+            escapeshellarg($originalVideoPath),
+            escapeshellarg($convertedVideoPath)
+        );
+
+        // Exécution de la commande FFmpeg
+        exec($ffmpegCommand, $output, $returnCode);
+
+        if ($returnCode === 0) {
+            // Conversion réussie, le fichier $convertedVideoPath contient la vidéo convertie
+            echo 'Conversion de la vidéo réussie !';
+        } else {
+            // Erreur lors de la conversion
+            echo 'Erreur lors de la conversion de la vidéo.';
+        }
     }
 }

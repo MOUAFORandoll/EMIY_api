@@ -146,7 +146,7 @@ class ShortController extends AbstractController
                     'titre' => $short->getTitre() ?? "Aucun",
                     'description' => $short->getDescription() ?? "Aucun",
                     'status' => $short->isStatus(),
-                    'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
+                    'src' =>  $short->getSrc(),
                     'date' =>
                     date_format($short->getDateCreated(), 'Y-m-d H:i'),
                     'boutique' =>  $boutiqueU
@@ -221,7 +221,7 @@ class ShortController extends AbstractController
                 'titre' => $short->getTitre() ?? "Aucun",
                 'description' => $short->getDescription() ?? "Aucun",
                 'status' => $short->isStatus(),
-                'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/videos/shorts/' . $short->getSrc(),
+                'src' =>  $short->getSrc(),
                 'srcBoutique' => 'd',
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),

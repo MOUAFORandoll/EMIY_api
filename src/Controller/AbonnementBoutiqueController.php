@@ -69,8 +69,7 @@ class AbonnementBoutiqueController extends AbstractController
      */
     public function abonnementAdd(Request $request,)
     {
-        $this->em->beginTransaction();
-        try {
+         
             $data
                 =        $data = $request->toArray();
 
@@ -88,7 +87,7 @@ class AbonnementBoutiqueController extends AbstractController
 
             $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
             $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
-            if (!$user || $boutique) {
+            if (!$user || !$boutique) {
                 return new JsonResponse([
                     'message' => 'Compte introuvable'
 
@@ -98,13 +97,14 @@ class AbonnementBoutiqueController extends AbstractController
             if ($abonnementExist) {
 
                 $abonnementExist->setStatus(!$abonnementExist->isStatus());
+                $this->em->persist($abonnementExist);
             } else {
                 $abonnement = new AbonnementBoutique();
 
                 $abonnement->setClient($user);
                 $abonnement->setBoutique($boutique);
+                $this->em->persist($abonnement);
             }
-            $this->em->persist($abonnement);
             $this->em->flush();
             return new JsonResponse([
                 'message' => 'Success',
@@ -112,13 +112,7 @@ class AbonnementBoutiqueController extends AbstractController
                 'id' =>  $boutique->getId()
 
             ], 200);
-        } catch (\Exception $e) {
-            // Une erreur s'est produite, annulez la transaction
-            $this->em->rollback();
-            return new JsonResponse([
-                'message' => 'Une erreur est survenue'
-            ], 203);
-        }
+        
     }
 
     /**
@@ -136,7 +130,7 @@ class AbonnementBoutiqueController extends AbstractController
     public function AbonnementReadClient(Request $request,)
     {
         $keySecret = $request->query->get('keySecret');
-        $page = $request->query->get('page') ?? 1;
+        $page = $request->query->get('page') == null || $request->query->get('page') == 0 ? 1 : $request->query->get('page');
 
 
 
@@ -242,7 +236,7 @@ class AbonnementBoutiqueController extends AbstractController
     {
         // $keySecret = $request->query->get('keySecret');
         $codeBoutique = $request->query->get('codeBoutique');
-        $page         = $request->query->get('page') ?? 1;
+        $page         = $request->query->get('page') == null || $request->query->get('page') == 0 ? 1 : $request->query->get('page');
 
 
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);

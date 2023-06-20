@@ -2,6 +2,7 @@
 
 namespace App\FunctionU;
 
+use App\Entity\AbonnementBoutique;
 use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Commande;
@@ -467,6 +468,15 @@ class MyFunction
 
         return ($notes != null) ? true : false;
     }
+    public function userabonnementBoutique(Boutique $boutique, UserPlateform $user)
+    {
+        $abonnementExist = $this->em->getRepository(AbonnementBoutique::class)->findOneBy(['boutique' => $boutique, 'client' => $user]);
+
+
+        return ($abonnementExist != null) ? true : false;
+    }
+
+
     public function noteBoutique($id)
     {
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['id' => $id]);
