@@ -6,6 +6,7 @@ use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Category;
 use App\Entity\Commande;
+use App\Entity\Communication;
 use App\Entity\ListProduitPanier;
 use App\Entity\Localisation;
 use App\Entity\ProduitObject;
@@ -138,7 +139,7 @@ class BoutiqueController extends AbstractController
      */
     public function boutiqueUserNew(Request $request, SluggerInterface $slugger)
     {
-        $this->em->beginTransaction();
+
         try {
             $data = [
                 'keySecret' => $request->get('keySecret'),
@@ -247,7 +248,7 @@ class BoutiqueController extends AbstractController
             }
         } catch (\Exception $e) {
             // Une erreur s'est produite, annulez la transaction
-            $this->em->rollback();
+
             return new JsonResponse([
                 'message' => 'Une erreur est survenue'
             ], 203);

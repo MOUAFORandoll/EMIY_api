@@ -34,6 +34,9 @@ class Short
     #[ORM\ManyToOne(targetEntity: Boutique::class, inversedBy: "shorts")]
     private $boutique;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $preview = null;
+
 
     public function getId(): ?int
     {
@@ -109,6 +112,18 @@ class Short
     public function setStatus(bool $status): self
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getPreview(): ?string
+    {
+        return $this->preview;
+    }
+
+    public function setPreview(string $preview): self
+    {
+        $this->preview = $preview;
 
         return $this;
     }

@@ -146,6 +146,15 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: AbonnementBoutique::class)]
     private Collection $abonnementBoutiques;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: Communication::class)]
+    private Collection $communications;
+
+    #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: MessageNegociation::class)]
+    private Collection $messageNegociations;
+
+    #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: MessageCommunication::class)]
+    private Collection $messageCommunications;
+
 
     public function __construct()
     {
@@ -162,6 +171,9 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->LikeProduits = new ArrayCollection();
         $this->negociationProduits = new ArrayCollection();
         $this->abonnementBoutiques = new ArrayCollection();
+        $this->communications = new ArrayCollection();
+        $this->messageNegociations = new ArrayCollection();
+        $this->messageCommunications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -652,6 +664,96 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($abonnementBoutique->getClient() === $this) {
                 $abonnementBoutique->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Communication>
+     */
+    public function getCommunications(): Collection
+    {
+        return $this->communications;
+    }
+
+    public function addCommunication(Communication $communication): self
+    {
+        if (!$this->communications->contains($communication)) {
+            $this->communications->add($communication);
+            $communication->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCommunication(Communication $communication): self
+    {
+        if ($this->communications->removeElement($communication)) {
+            // set the owning side to null (unless already changed)
+            if ($communication->getClient() === $this) {
+                $communication->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, MessageNegociation>
+     */
+    public function getMessageNegociations(): Collection
+    {
+        return $this->messageNegociations;
+    }
+
+    public function addMessageNegociation(MessageNegociation $messageNegociation): self
+    {
+        if (!$this->messageNegociations->contains($messageNegociation)) {
+            $this->messageNegociations->add($messageNegociation);
+            $messageNegociation->setInitiateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMessageNegociation(MessageNegociation $messageNegociation): self
+    {
+        if ($this->messageNegociations->removeElement($messageNegociation)) {
+            // set the owning side to null (unless already changed)
+            if ($messageNegociation->getInitiateur() === $this) {
+                $messageNegociation->setInitiateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, MessageCommunication>
+     */
+    public function getMessageCommunications(): Collection
+    {
+        return $this->messageCommunications;
+    }
+
+    public function addMessageCommunication(MessageCommunication $messageCommunication): self
+    {
+        if (!$this->messageCommunications->contains($messageCommunication)) {
+            $this->messageCommunications->add($messageCommunication);
+            $messageCommunication->setInitiateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMessageCommunication(MessageCommunication $messageCommunication): self
+    {
+        if ($this->messageCommunications->removeElement($messageCommunication)) {
+            // set the owning side to null (unless already changed)
+            if ($messageCommunication->getInitiateur() === $this) {
+                $messageCommunication->setInitiateur(null);
             }
         }
 

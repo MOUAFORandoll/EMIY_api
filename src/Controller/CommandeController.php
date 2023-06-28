@@ -124,7 +124,7 @@ class CommandeController extends AbstractController
      */
     public function commandeNewX(Request $request)
     {
-        // $this->em->beginTransaction();
+        //
         // try {
         $data = $request->toArray();
         if (
@@ -133,7 +133,7 @@ class CommandeController extends AbstractController
             || (empty($data['phone']) && empty($data['keySecret']))
             || empty($data['listProduits'])
             || empty($data['idModePaiement'])
-            || empty($data['ville'])
+            // || empty($data['ville'])
             || empty($data['point_livraison'])
 
             || empty($data['longitude'])
@@ -215,7 +215,7 @@ class CommandeController extends AbstractController
             }
         }
 
-        $ville = $data['ville'];
+        // $ville = $data['ville'];
         $longitude = $data['longitude'];
         $latitude = $data['latitude'];
         // $localisation = new Localisation();
@@ -251,7 +251,7 @@ class CommandeController extends AbstractController
         return $this->myFunction->paid($data,  $total,  $commande->getId());
         // } catch (\Exception $e) {
         //     // Une erreur s'est produite, annulez la transaction
-        //     $this->em->rollback();
+        //     
         //     return new JsonResponse([
         //         'message' => 'Une erreur est survenue'
         //     ], 203);
@@ -266,7 +266,7 @@ class CommandeController extends AbstractController
      */
     public function commandeNewNegocie(Request $request)
     {
-        // $this->em->beginTransaction();
+        //
         // try {
         $data = $request->toArray();
         if (
@@ -809,7 +809,7 @@ class CommandeController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-       
+
         $possible = false;
 
 

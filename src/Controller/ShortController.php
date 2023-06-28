@@ -146,6 +146,7 @@ class ShortController extends AbstractController
                     'titre' => $short->getTitre() ?? "Aucun",
                     'description' => $short->getDescription() ?? "Aucun",
                     'status' => $short->isStatus(),
+                    'Preview' =>  $short->getPreview(),
                     'src' =>  $short->getSrc(),
                     'date' =>
                     date_format($short->getDateCreated(), 'Y-m-d H:i'),
@@ -222,6 +223,7 @@ class ShortController extends AbstractController
                 'description' => $short->getDescription() ?? "Aucun",
                 'status' => $short->isStatus(),
                 'src' =>  $short->getSrc(),
+                'Preview' =>  $short->getPreview(),
                 'srcBoutique' => 'd',
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),
@@ -262,99 +264,126 @@ class ShortController extends AbstractController
     public function ShortNew(Request $request, SluggerInterface $slugger)
     {
 
-        $this->em->beginTransaction();
-        try {
-            // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        // try {
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
-            $possible = false;
-
+        $possible = false;
 
 
 
-            $data = [
 
-                'titre' => $request->get('titre'),
-                'description' => $request->get('description'),
+        $data = [
 
-                'codeBoutique' => $request->get('codeBoutique'),
-            ];
+            'titre' => $request->get('titre'),
+            'description' => $request->get('description'),
 
-            if (
-                empty($data['titre']) || empty($data['description'])
+            'codeBoutique' => $request->get('codeBoutique'),
+        ];
+
+        if (
+            empty($data['titre']) || empty($data['description'])
 
 
-                || empty($data['codeBoutique'])
-            ) {
-                return new JsonResponse(
-                    [
-                        'message' => 'Verifier votre requette',
-                        // 'data'=> $data
-                    ],
-                    400
+            || empty($data['codeBoutique'])
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Verifier votre requette',
+                    // 'data'=> $data
+                ],
+                400
+            );
+        }
+
+        $titre = $data['titre'];
+        $description = $data['description'];
+        // dd( $this->getParameter( 'shorts_object' ) );
+
+        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $data['codeBoutique']]);
+
+        $file = $request->files->get('file');
+
+        // dd($file);
+
+        if ($file &&   $boutique) {
+            $nameFile                 = $this->myFunction->getUniqueNameProduit();
+            $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            // this is needed to safely include the file name as part of the URL
+            $safeFilenameData = $slugger->slug($originalFilenameData);
+            $newFilenameData =
+                $nameFile . '.' . $file->guessExtension();
+
+            // Move the file to the directory where brochures are stored
+            try {
+
+                $file->move(
+                    $this->getParameter('shorts_object'),
+                    $newFilenameData
                 );
-            }
+                $this->extractImageFromVideoAction(
+                    $this->getParameter('shorts_object') . '/' .
+                        $newFilenameData,
 
-            $titre = $data['titre'];
-            $description = $data['description'];
-
-
-            $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $data['codeBoutique']]);
-
-            $file = $request->files->get('file');
+                    $this->getParameter('shorts_object') . '/' .    $nameFile . '.jpg'
 
 
-
-            if ($file) {
-                $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                // this is needed to safely include the file name as part of the URL
-                $safeFilenameData = $slugger->slug($originalFilenameData);
-                $newFilenameData =
-                    $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
-
-                // Move the file to the directory where brochures are stored
-                try {
-
-                    $file->move(
-                        $this->getParameter('shorts_object'),
-                        $newFilenameData
-                    );
-                    $short = new Short();
-                    $short->setSrc($newFilenameData);
-                    $short->setTitre($titre);
-                    $short->setDescription(
-                        $description
-                    );
-                    $short->setBoutique($boutique);
-                    $this->em->persist($short);
-
-                    $imagePresent = true;
-                } catch (FileException $e) {
-                    return
-                        new JsonResponse([
-
-                            'status' =>   false,
-                            'message' =>   'Vos fichiers ne sont pas valides'
-
-                        ], 203);
-                }
-            }
-
-            $this->em->flush();
-
-            return
-                new JsonResponse(
-                    [
-                        'message'
-                        =>  'success'
-                    ],
-                    200
                 );
-        } catch (\Exception $e) {
-            // Une erreur s'est produite, annulez la transaction
-            $this->em->rollback();
-            return new JsonResponse([
-                'message' => 'Une erreur est survenue'
-            ], 203);
+                $short = new Short();
+                $short->setSrc($newFilenameData);
+                $short->setPreview($nameFile . '.jpg');
+                $short->setTitre($titre);
+                $short->setDescription(
+                    $description
+                );
+                $short->setBoutique($boutique);
+                $this->em->persist($short);
+                $this->em->flush();
+
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            =>  'success'
+                        ],
+                        200
+                    );
+            } catch (FileException $e) {
+                return
+                    new JsonResponse([
+
+                        'status' =>   false,
+                        'message' =>   'Vos fichiers ne sont pas valides'
+
+                    ], 203);
+            }
+        }
+        // } catch (\Exception $e) {
+        //     // Une erreur s'est produite, annulez la transaction
+
+        //     return new JsonResponse([
+        //         'message' => 'Une erreur est survenue',
+        //         ' $e' => $e
+        //     ], 203);
+        // }
+    }
+
+    public function extractImageFromVideoAction($videoPath, $imagePath)
+    {
+
+        // Exécute la commande FFmpeg
+        $command = "ffmpeg -i $videoPath -ss 00:00:01 -vframes 1 $imagePath";
+        exec($command);
+
+        // Vérifie si l'image a été correctement extraite
+        if (file_exists($imagePath)) {
+            // Retourne l'image extraite en tant que réponse
+            return new Response(file_get_contents($imagePath), 200, [
+                'Content-Type' => 'image/jpeg',
+                'Content-Disposition' => 'inline; filename="image.jpg"'
+            ]);
+        } else {
+            // Gère l'erreur si l'image n'a pas pu être extraite
+            return new Response('Erreur lors de l\'extraction de l\'image', 500);
         }
     }
 }

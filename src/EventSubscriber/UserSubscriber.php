@@ -3,6 +3,7 @@
 namespace App\EventSubscriber;
 
 use ApiPlatform\Core\EventListener\EventPriorities;
+use App\Entity\Communication;
 use App\Entity\Compte;
 use App\Entity\TypeUser;
 use App\Entity\UserPlateform;
@@ -12,16 +13,22 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use App\FunctionU\MyFunction;
 
 final class UserSubscriber extends AbstractController implements EventSubscriberInterface
 {
 
     private $em;
     public    $doctrine;
+    private $myFunction;
 
-    public function __construct(EntityManagerInterface $em)
-    {
+    public function __construct(
+        EntityManagerInterface $em,
+        MyFunction  $myFunction
+
+    ) {
         $this->em = $em;
+        $this->myFunction = $myFunction;
     }
 
     public static function getSubscribedEvents()
@@ -64,6 +71,7 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
             }
 
 
+            $this->createCommunication($User);
             $this->createCompte($User);
         }
     }
@@ -82,6 +90,22 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
         $this->em->persist($newCompte);
         $this->em->flush();    # code...
     }
+    public function createCommunication($user)
+    {
+
+
+
+
+        $communication = new   Communication();
+        $communication->setClient($user);
+        $communication->setCodeCommunication($this->myFunction->getUniqueCodeCommunication());
+
+        $this->em->persist(
+            $communication
+        );
+        $this->em->flush();
+    }
+
     public function parrain(UserPlateform $parrain, UserPlateform $fieul)
 
     {

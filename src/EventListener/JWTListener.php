@@ -1,39 +1,44 @@
 <?php
 
-
 namespace App\EventListener;
 
+use App\Entity\Communication;
 use App\Entity\UserPlateform;
-
-use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
+use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTCreatedEvent;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTAuthenticatedEvent;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Events;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class JWTListener extends AbstractController
+class JWTListener implements EventSubscriberInterface
 {
 
-    private $security;
 
-
-    /**
-     * JWTCreatedListener constructor.
-     */
     public function __construct()
     {
     }
 
-    public function onJWTCreated(JWTCreatedEvent $event)
+    public static function getSubscribedEvents()
+    {
+        return [
+            Events::JWT_CREATED => 'onJWTCreated',
+            Events::JWT_AUTHENTICATED => 'onJWTAuthenticated',
+        ];
+    }
+
+    public function onJWTCreated(JWTCreatedEvent $event,)
     {
         /** @var UserPlateform $user */
         $user = $event->getUser();
+
+        // $communication = $em->getRepository(Communication::class)->findOneBy(['client' => $user]);
         $payload = $event->getData();
         $payload['id'] = $user->getId();
         $payload['nom'] = $user->getNom();
-        $payload['prenom'] =   $user->getPrenom();
+        $payload['prenom'] = $user->getPrenom();
         $payload['email'] = $user->getEmail();
         $payload['keySecret'] = $user->getKeySecret();
+        $payload['codeCommunication'] = $user->getCommunications()->first()->getCodeCommunication();
 
         $event->setData($payload);
     }
@@ -47,17 +52,6 @@ class JWTListener extends AbstractController
         $token->setAttribute('prenom', $payload['prenom']);
         $token->setAttribute('keySecret', $payload['keySecret']);
         $token->setAttribute('email', $payload['email']);
-    }
-
-    public function onAuthenticationSuccessResponse(AuthenticationSuccessEvent $event)
-    {
-        $data = $event->getData();
-        $user = $event->getUser();
-
-        if (!$user instanceof UserInterface) {
-            return;
-        }
-
-        $event->setData($data);
+        $token->setAttribute('codeCommunication', $payload['codeCommunication']);
     }
 }

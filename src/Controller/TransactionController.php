@@ -165,7 +165,7 @@ class TransactionController extends AbstractController
      */
     public function transacionRetraitUser(Request $request)
     {
-        $this->em->beginTransaction();
+
         try {
             // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
             $data = $request->toArray();
@@ -271,7 +271,7 @@ class TransactionController extends AbstractController
             }
         } catch (\Exception $e) {
             // Une erreur s'est produite, annulez la transaction
-            $this->em->rollback();
+
             return new JsonResponse([
                 'message' => 'Une erreur est survenue'
             ], 203);
@@ -299,7 +299,7 @@ class TransactionController extends AbstractController
     public function compteCredit(Request $request)
     {
 
-        // $this->em->beginTransaction();
+        //
         // try {  // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
         $data = $request->toArray();
 
@@ -378,7 +378,7 @@ class TransactionController extends AbstractController
         return $transactionE;
         // } catch (\Exception $e) {
         //     // Une erreur s'est produite, annulez la transaction
-        //     $this->em->rollback();
+        //     
         //     return new JsonResponse([
         //         'message' => 'Une erreur est survenue'
         //     ], 203);

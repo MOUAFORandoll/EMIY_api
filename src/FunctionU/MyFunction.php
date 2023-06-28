@@ -7,6 +7,7 @@ use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Commande;
 use App\Entity\Commission;
+use App\Entity\Communication;
 use App\Entity\Compte;
 use App\Entity\HistoriquePaiement;
 use App\Entity\ListProduitPanier;
@@ -468,8 +469,17 @@ class MyFunction
 
         return ($notes != null) ? true : false;
     }
-    public function userabonnementBoutique(Boutique $boutique, UserPlateform $user)
+    public function userabonnementBoutique($boutique,   $user)
     {
+        if (!$user) {
+            return
+                false;
+        }
+        if (!$boutique) {
+            return
+                false;
+        }
+
         $abonnementExist = $this->em->getRepository(AbonnementBoutique::class)->findOneBy(['boutique' => $boutique, 'client' => $user]);
 
 
@@ -648,6 +658,24 @@ class MyFunction
     //transaction
     //negociation
 
+    public function getUniqueCodeCommunication()
+    {
+
+
+        $chaine = 'communication';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 5; ++$i) {
+            $chaine .= $listeCar[random_int(0, $max)];
+        }
+        $ExistCode = $this->em->getRepository(Communication::class)->findOneBy(['codeCommunication' => $chaine]);
+        if ($ExistCode) {
+            return
+                $this->getUniqueCodeCommunication();
+        } else {
+            return $chaine;
+        }
+    }
 
     public function Socekt_Emit($canal, $data)
     {

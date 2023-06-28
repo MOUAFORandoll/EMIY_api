@@ -761,7 +761,7 @@ class TestController extends AbstractController
         $filesShort  = scandir($sourceDirShort);
         foreach ($filesShort  as $file) {
             var_dump($file);
-            $this->Convert($file);
+            $this->extractImageFromVideoAction($file);
             // if ($file != '.' && $file != '..')
             //     $listVideoShort[] = $file;
         }
@@ -771,6 +771,28 @@ class TestController extends AbstractController
 
 
         return new Response('Segment vidéo non trouvé', Response::HTTP_NOT_FOUND);
+    }
+
+    public function extractImageFromVideoAction($o)
+    {
+        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;
+        $imagePath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' . str_replace('mp4', 'jpg', $o);
+
+        // Exécute la commande FFmpeg
+        $command = "ffmpeg -i $videoPath -ss 00:00:01 -vframes 1 $imagePath";
+        exec($command);
+
+        // Vérifie si l'image a été correctement extraite
+        if (file_exists($imagePath)) {
+            // Retourne l'image extraite en tant que réponse
+            return new Response(file_get_contents($imagePath), 200, [
+                'Content-Type' => 'image/jpeg',
+                'Content-Disposition' => 'inline; filename="image.jpg"'
+            ]);
+        } else {
+            // Gère l'erreur si l'image n'a pas pu être extraite
+            return new Response('Erreur lors de l\'extraction de l\'image', 500);
+        }
     }
 
 

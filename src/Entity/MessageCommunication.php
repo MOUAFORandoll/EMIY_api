@@ -2,20 +2,18 @@
 
 namespace App\Entity;
 
-use App\Repository\MessageNegociationRepository;
+use App\Repository\MessageCommunicationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: MessageNegociationRepository::class)]
-class MessageNegociation
+#[ORM\Entity(repositoryClass: MessageCommunicationRepository::class)]
+class MessageCommunication
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
-
-    #[ORM\ManyToOne(inversedBy: 'MessageNegociations')]
-    private ?NegociationProduit $negociation = null;
+ 
 
     #[ORM\Column]
     private ?bool $emetteur = true;
@@ -26,8 +24,11 @@ class MessageNegociation
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $dateEnvoi = null;
 
-    #[ORM\ManyToOne(inversedBy: 'messageNegociations')]
+    #[ORM\ManyToOne(inversedBy: 'messageCommunications')]
     private ?UserPlateform $initiateur = null;
+
+    #[ORM\ManyToOne(inversedBy: 'messageCommunications')]
+    private ?Communication $communication = null;
     public function __construct()
     {
 
@@ -38,19 +39,7 @@ class MessageNegociation
     {
         return $this->id;
     }
-
-    public function getNegociation(): ?NegociationProduit
-    {
-        return $this->negociation;
-    }
-
-    public function setNegociation(?NegociationProduit $negociation): self
-    {
-        $this->negociation = $negociation;
-
-        return $this;
-    }
-
+ 
     public function isEmetteur(): ?bool
     {
         return $this->emetteur;
@@ -98,4 +87,17 @@ class MessageNegociation
 
         return $this;
     }
+
+    public function getCommunication(): ?Communication
+    {
+        return $this->communication;
+    }
+
+    public function setCommunication(?Communication $communication): self
+    {
+        $this->communication = $communication;
+
+        return $this;
+    }
+    
 }
