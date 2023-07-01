@@ -14,6 +14,7 @@ use App\Entity\PointLivraison;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Transaction;
+use App\Entity\TypeCommande;
 use App\Entity\TypeUser;
 use Symfony\Component\Serializer\SerializerInterface;
 use DateTime;
