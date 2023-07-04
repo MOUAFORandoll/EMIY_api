@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20230628193442 extends AbstractMigration
+final class Version20230703103624 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -20,6 +20,7 @@ final class Version20230628193442 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
+        $this->addSql('ALTER TABLE commande ADD montant INT DEFAULT NULL');
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
         $this->addSql('ALTER TABLE user_plateform ALTER key_secret TYPE TEXT');
@@ -33,6 +34,7 @@ final class Version20230628193442 extends AbstractMigration
         $this->addSql('ALTER TABLE user_plateform ALTER key_secret TYPE TEXT');
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
+        $this->addSql('ALTER TABLE commande DROP montant');
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
     }

@@ -15,7 +15,7 @@ class TypeUser
 {
     /**
      
-     * 1 => asdmin, 2 => simple client, 3 => administrateur
+     * 1 => administrateur, 2 => simple client, 3 => livreur
      */
     #[ORM\Id]
     #[ORM\GeneratedValue]

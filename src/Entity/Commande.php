@@ -43,7 +43,7 @@ class Commande
 
     // false => initialise et attente de validation du client .
     //   true => Payement valide .
-     
+
     #[ORM\Column(type: "boolean")]
     private $statusBuy = false;
 
@@ -56,6 +56,8 @@ class Commande
 
     private $statusFinish = 0;
 
+    #[ORM\Column(type: "integer", length: 255, nullable: true)]
+    private $montant  ;
     #[ORM\Column(type: "string", length: 1000000)]
     private $token;
 
@@ -73,6 +75,7 @@ class Commande
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
+      
         $this->listCommandeLivreurs = new ArrayCollection();
         $this->historiquePaiements = new ArrayCollection();
     }
@@ -296,6 +299,17 @@ class Commande
     public function setTypeCommande(?TypeCommande $typeCommande): self
     {
         $this->typeCommande = $typeCommande;
+
+        return $this;
+    }
+    public function getMontant(): ?int
+    {
+        return $this->montant;
+    }
+
+    public function setMontant(int $montant): self
+    {
+        $this->montant = $montant;
 
         return $this;
     }

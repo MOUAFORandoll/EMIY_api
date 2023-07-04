@@ -362,51 +362,6 @@ class BoutiqueController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/boutique/state", name="boutiqueState", methods={"POST"})
-     * @param array $data doit contenir la keySecret  de l'utilsateur a modifier, le typeUser a affecter
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function boutiqueState(Request $request)
-    {
-        $data = $request->toArray();
-        if (empty($data['adminkeySecret']) || empty($data['codeBoutique'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayer   '
-            ], 400);
-        }
-
-        $adminkeySecret = $data['adminkeySecret'];
-        $codeBoutique = $data['codeBoutique'];
-        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
-
-        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
-
-        if ($user->getTypeUser()->getId() == 1) {
-
-            $boutique->setStatus(!$boutique->isStatus());
-
-            $boutique->setCodeBoutique($codeBoutique);
-
-
-
-            $this->em->persist($boutique);
-            $this->em->flush();
-
-            return new JsonResponse([
-                'message' => 'Boutique modifiee avec success',
-
-                'id' =>  $boutique->getId()
-
-            ], 200);
-        } else {
-            return new JsonResponse([
-                'message' => 'Cette boutique ne vous appartient pas'
-
-            ], 400);
-        }
-    }
 
     /**
      * @Route("boutique/read/all", name="boutiqueReadAll", methods={"GET"})
