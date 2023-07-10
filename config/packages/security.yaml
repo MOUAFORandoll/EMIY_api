@@ -43,6 +43,14 @@ security:
   # Easy way to control access for large sections of your site
   # Note: Only the *first* access control that matches will be used
   access_control:
+  
+     - { path: ^/dashboard/commande, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/boutique, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/boutique/produit, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/boutique/commande, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/user, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/client/state, roles: IS_AUTHENTICATED_FULLY }
+     - { path: ^/dashboard/boutique/state, roles: IS_AUTHENTICATED_FULLY }
      
 when@test:
   security:

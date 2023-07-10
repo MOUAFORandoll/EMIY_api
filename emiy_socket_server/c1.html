@@ -88,18 +88,20 @@
                 messages.appendChild(item);
             }
         });
-        socket.on('chat', (data) => {
-            if (data["targetId"] == "2") {
+        socket.on('general', (data) => {
 
+            console.log('Message reçu depuis le serveur:', data);
 
-                var item = document.createElement('li');
-                item.textContent = data["message"];
-                item.style.backgroundColor = 'red';
+            var item = document.createElement('li');
+            console.log('Message reçu depuis le serveur:', JSON.stringify(data));
 
-                messages.appendChild(item);
-                window.scrollTo(0, document.body.scrollHeight);
-                console.log('Message reçu depuis le serveur:', data);
-            }
+            item.textContent = data["message"];
+            item.style.backgroundColor = 'red';
+
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+            console.log('Message reçu depuis le serveur:', data);
+
         });
     </script>
 </body>

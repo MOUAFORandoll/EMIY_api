@@ -95,6 +95,9 @@ class CommunicationController extends AbstractController
             'data' => [
                 'id' =>   $messageCommunication->getId(),
                 'message' => $message,
+                'codeCom' =>    $communication->getCodeCommunication(),
+                'is_service' =>       $messageCommunication->getInitiateur()->getId()
+                    == $communication->getClient()->getId() ? 0 : 1,
                 'emetteurId' =>  $emetteur->getId(),
                 'date' =>  $messageCommunication->getDateEnvoi()->format('Y-m-d'),
                 'heure' =>  $messageCommunication->getDateEnvoi()->format('H:i'),

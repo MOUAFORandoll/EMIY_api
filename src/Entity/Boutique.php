@@ -28,11 +28,19 @@ class Boutique
     #[ORM\Column(type: "boolean")]
     private $status = false;
 
+
     #[ORM\Column(type: "string", length: 255, nullable: true)]
     private $codeBoutique;
 
     #[ORM\Column(type: "date", nullable: true)]
     private $dateCreated;
+
+    #[ORM\Column(type: "date", nullable: true)]
+    private $dateFirstActivated;
+
+
+    #[ORM\Column(type: "date", nullable: true)]
+    private $dateLastDesactivated;
 
     #[ORM\ManyToOne(targetEntity: UserPlateform::class, inversedBy: "boutiques")]
     private $user;
@@ -62,6 +70,9 @@ class Boutique
 
     public function __construct()
     {
+        $this->dateCreated = new \DateTime();
+        $this->dateFirstActivated = new \DateTime();
+        $this->dateLastDesactivated = new \DateTime();
         $this->dateCreated = new \DateTime();
         $this->produits = new ArrayCollection();
         $this->boutiqueObjects = new ArrayCollection();
@@ -119,6 +130,28 @@ class Boutique
     public function setDateCreated(?\DateTimeInterface $dateCreated): self
     {
         $this->dateCreated = $dateCreated;
+
+        return $this;
+    }
+    public function getDateFirstActivated(): ?\DateTimeInterface
+    {
+        return $this->dateFirstActivated;
+    }
+
+    public function setDateFirstActivated(?\DateTimeInterface $dateFirstActivated): self
+    {
+        $this->dateFirstActivated = $dateFirstActivated;
+
+        return $this;
+    }
+    public function getDateLastDesactivated(): ?\DateTimeInterface
+    {
+        return $this->dateLastDesactivated;
+    }
+
+    public function setDateLastDesactivated(?\DateTimeInterface $dateLastDesactivated): self
+    {
+        $this->dateLastDesactivated = $dateLastDesactivated;
 
         return $this;
     }

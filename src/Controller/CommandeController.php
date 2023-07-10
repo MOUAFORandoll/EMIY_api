@@ -1666,7 +1666,7 @@ class CommandeController extends AbstractController
     }
 
 
- 
+
 
     /**
      * @Route("/commande/produit/read/user", name="commandeProduitReadForUser", methods={"POST"})
@@ -1939,7 +1939,7 @@ class CommandeController extends AbstractController
             'mOUAFO',
             'total'
             =>    150150,
-            'date' =>  date_format(new DateTime(), 'Y-m-d H:i'),
+            'date' =>  date_format(new \DateTimeImmutable(), 'Y-m-d H:i'),
             'produits' => ['']
         ];
         $pdf = $this->myFunction->verifyBuy('CXOCWmCmeOrL7P1bIbsvVszSLFgrx5Nx');

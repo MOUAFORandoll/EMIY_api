@@ -6,11 +6,16 @@ use ApiPlatform\Core\Bridge\Symfony\Bundle\Test\Client;
 use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Commande;
+use App\Entity\Communication;
 use App\Entity\Compte;
 use App\Entity\ListCommandeLivreur;
 use App\Entity\ListProduitPanier;
 use App\Entity\Localisation;
+use App\Entity\MessageCommunication;
+use App\Entity\MessageNegociation;
 use App\Entity\ModePaiement;
+use App\Entity\NegociationProduit;
+use App\Entity\Notification;
 use App\Entity\Panier;
 use App\Entity\Place;
 use App\Entity\PointLivraison;
@@ -19,6 +24,7 @@ use App\Entity\ProduitObject;
 use App\Entity\Transaction;
 use App\Entity\TypeCommande;
 use App\Entity\TypeUser;
+use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use DateTime;
 use FFI\Exception;
@@ -48,6 +54,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Dompdf\Dompdf;
 use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
 
+
 class DashBoardController extends AbstractController
 {
 
@@ -57,27 +64,144 @@ class DashBoardController extends AbstractController
     private $mailer;
     private $client;
     private $validator;
+    private $jwt;
+    private $jwtRefresh;
     private $myFunction;
 
+    private $passwordHasher;
     public function __construct(
         SerializerInterface $serializer,
         EntityManagerInterface $em,
 
-        HttpClientInterface $client,
+        //security
+        UserPasswordHasherInterface      $passwordHasher,
 
+        HttpClientInterface $client,
+        JWTTokenManagerInterface $jwt,
+        RefreshTokenManagerInterface $jwtRefresh,
         ValidatorInterface $validator,
         MyFunction $myFunction
     ) {
         $this->em = $em;
         $this->serializer = $serializer;
+        $this->passwordHasher = $passwordHasher;
 
         $this->client = $client;
 
+        $this->jwt = $jwt;
+        $this->jwtRefresh = $jwtRefresh;
 
         $this->validator = $validator;
         $this->myFunction = $myFunction;
     }
 
+    /**
+     * @Route("/dashboard/auth/user", name="DashBoardauthU", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardauthU(Request $request)
+    {
+        $data = $request->toArray();
+
+
+        if (empty($data['phone'])  || empty($data['password'])) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre numero de telephone et mot de passe.'
+            ], 400);
+        }
+
+        $phone = $data['phone'];
+
+        $password = $data['password'];
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['phone' => $phone,]);
+        if (!$user) {
+            return new JsonResponse([
+                'message' => 'Ce client n\'existe pas'
+            ], 400);
+        }
+
+        if (
+            $user->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (!password_verify($password, $user->getPassword())) {
+            return new JsonResponse([
+                'message' => 'Mauvais mot de passe'
+            ], 400);
+        }
+        $infoUser = $this->createNewJWT($user);
+        $tokenAndRefresh = json_decode($infoUser->getContent());
+
+        return new JsonResponse([
+
+
+            'token' => $tokenAndRefresh->token,
+            'refreshToken' => $tokenAndRefresh->refreshToken,
+        ], 201);
+    }
+
+    /**
+     * @Route("/dashboard", name="DashBoard", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoard(Request $request)
+    {
+
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et  preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+        $user = $this->em->getRepository(UserPlateform::class)->findAll();
+        $llcom
+            = $this->em->getRepository(Commande::class)->findAll();
+
+        $listLivraison = $this->em->getRepository(ListCommandeLivreur::class)->findAll();
+
+        $data = [
+            'nbr_users' => count($user),
+            'nbr_commandes'
+            => count($llcom),
+            'nbr_livraisons'
+            => count($listLivraison),
+        ];
+        return new JsonResponse([
+
+            'data' => $data
+
+        ], 201);
+    }
 
 
     /**
@@ -108,150 +232,147 @@ class DashBoardController extends AbstractController
             ], 400);
         }
         $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
-        if ($admin) {
+        if (!$admin) {
 
 
-
-            if (
-                $admin->getTypeUser()->getId() == 1
-            ) {
-
-                $llcom
-                    = $this->em->getRepository(Commande::class)->findAll();
-
-                $fCom = [];
-                foreach ($llcom  as $commande) {
-
-
-                    if ($commande) {
-
-
-                        $llcom
-                            = $this->em->getRepository(ListCommandeLivreur::class)->findBy(['commande' => $commande]);
-                        if (!$llcom) {
-                            $panier = $commande->getPanier();
-
-                            if ($panier) {
-
-                                $listProduitPanier = $this->em->getRepository(ListProduitPanier::class)->findBy(['panier' => $panier]);
-                                $lP = [];
-                                if ($listProduitPanier) {
-
-                                    foreach ($listProduitPanier  as $pp) {
-
-                                        $produit = $pp->getProduit();
-
-                                        if ($produit) {
-
-
-
-
-                                            if (
-                                                $produit->getBoutique()
-                                            ) {
-
-                                                $lsImgP = [];
-                                                $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                                                foreach ($lProduitO  as $produit0) {
-                                                    $lsImgP[]
-                                                        = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
-                                                }
-                                                $boutique = [
-
-                                                    'id'  => $produit->getBoutique()->getId(),
-
-                                                    'titre'
-                                                    => $produit->getBoutique()->getTitre(),
-                                                    'codeBoutique'
-                                                    => $produit->getBoutique()->getCodeBoutique(),
-                                                    'description'
-                                                    => $produit->getBoutique()->getDescription(),
-
-                                                    'localisation' =>  $produit->getBoutique()->getLocalisation() ? [
-                                                        'ville' =>
-                                                        $produit->getBoutique()->getLocalisation()->getVille(),
-
-                                                        'longitude' =>
-                                                        $produit->getBoutique()->getLocalisation()->getLongitude(),
-                                                        'latitude' =>
-                                                        $produit->getBoutique()->getLocalisation()->getLatitude(),
-                                                    ] : []
-                                                ];
-                                                $produit =  [
-                                                    'idBoutique'  => $produit->getBoutique()->getId(),
-                                                    'codeProduit' => $pp->getCodeProduitPanier(),
-                                                    // 'codeCommande' => $commande->getCodeCommande(),
-                                                    'boutique' => $boutique,
-                                                    'titre' => $produit->getTitre(),
-                                                    'prix' => $produit->getPrixUnitaire(),
-                                                    'quantite' => $pp->getQuantite(),
-                                                    'status' => $pp->isStatus() ? 'Valide' : 'En cours',
-
-                                                    'photo' => $lsImgP[0]
-                                                ];
-                                                array_push($lP, $produit);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            $lff = [];
-                            foreach ($lP  as $p) {
-
-                                foreach ($lP  as $y) {
-                                    if ($p['idBoutique'] == $y['idBoutique']) {
-                                        if (!in_array($y, $lff))
-                                            array_push($lff, $y);
-                                    }
-                                }
-                            }
-
-
-                            if (count($lP) > 0) {
-                                $cf = [
-                                    'status' => $this->getStatustoText($commande->getStatusFinish()),
-                                    'user_name' =>   $commande->getPanier()->getNomClient() . ' ' .  $commande->getPanier()->getPrenomClient(),
-                                    'user_phone' =>   $commande->getPanier()->getPhoneClient(),
-                                    'codeCommande' =>  $commande->getCodeCommande(),
-                                    'montant' => $commande->getMontant(),
-                                    'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i'),
-                                    'nombre_produit' =>   count($listProduitPanier),
-
-                                    'produits' => $lff,
-                                    'point_livraison' => $commande->getPointLivraison()->getLibelle()
-                                ];
-                                array_push($fCom, $cf);
-                            }
-                            // $listProduits = $serializer->serialize($lP, 'json');
-
-
-
-                        }
-                    }
-                }
-                return
-                    new JsonResponse(
-                        [
-
-                            'data'
-                            =>  $fCom
-                        ],
-                        200
-                    );
-            } else {
-                return new JsonResponse([
-                    'data'
-                    => [],
-                    'message' => 'Action impossible'
-                ], 203);
-            }
-        } else {
             return new JsonResponse([
                 'data'
                 => [],
-                'message' => 'Utilisateur introuvable'
-            ], 400);
+                'message' => 'Action impossible'
+            ], 203);
         }
+
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        $llcom
+            = $this->em->getRepository(Commande::class)->findAll();
+
+        $fCom = [];
+        foreach ($llcom  as $commande) {
+
+
+            if ($commande) {
+
+
+                $llcom
+                    = $this->em->getRepository(ListCommandeLivreur::class)->findBy(['commande' => $commande]);
+                if (!$llcom) {
+                    $panier = $commande->getPanier();
+
+                    if ($panier) {
+
+                        $listProduitPanier = $this->em->getRepository(ListProduitPanier::class)->findBy(['panier' => $panier]);
+                        $lP = [];
+                        if ($listProduitPanier) {
+
+                            foreach ($listProduitPanier  as $pp) {
+
+                                $produit = $pp->getProduit();
+
+                                if ($produit) {
+
+
+
+
+                                    if (
+                                        $produit->getBoutique()
+                                    ) {
+
+                                        $lsImgP = [];
+                                        $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                                        foreach ($lProduitO  as $produit0) {
+                                            $lsImgP[]
+                                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                        }
+                                        $boutique = [
+
+                                            'id'  => $produit->getBoutique()->getId(),
+
+                                            'titre'
+                                            => $produit->getBoutique()->getTitre(),
+                                            'codeBoutique'
+                                            => $produit->getBoutique()->getCodeBoutique(),
+                                            'description'
+                                            => $produit->getBoutique()->getDescription(),
+
+                                            'localisation' =>  $produit->getBoutique()->getLocalisation() ? [
+                                                'ville' =>
+                                                $produit->getBoutique()->getLocalisation()->getVille(),
+
+                                                'longitude' =>
+                                                $produit->getBoutique()->getLocalisation()->getLongitude(),
+                                                'latitude' =>
+                                                $produit->getBoutique()->getLocalisation()->getLatitude(),
+                                            ] : []
+                                        ];
+                                        $produit =  [
+                                            'idBoutique'  => $produit->getBoutique()->getId(),
+                                            'codeProduit' => $pp->getCodeProduitPanier(),
+                                            // 'codeCommande' => $commande->getCodeCommande(),
+                                            'boutique' => $boutique,
+                                            'titre' => $produit->getTitre(),
+                                            'prix' => $produit->getPrixUnitaire(),
+                                            'quantite' => $pp->getQuantite(),
+                                            'status' => $pp->isStatus() ? 'Valide' : 'En cours',
+
+                                            'photo' => $lsImgP[0]
+                                        ];
+                                        array_push($lP, $produit);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    $lff = [];
+                    foreach ($lP  as $p) {
+
+                        foreach ($lP  as $y) {
+                            if ($p['idBoutique'] == $y['idBoutique']) {
+                                if (!in_array($y, $lff))
+                                    array_push($lff, $y);
+                            }
+                        }
+                    }
+
+
+                    if (count($lP) > 0) {
+                        $cf = [
+                            'status' => $this->getStatustoText($commande->getStatusFinish()),
+                            'user_name' =>   $commande->getPanier()->getNomClient() . ' ' .  $commande->getPanier()->getPrenomClient(),
+                            'user_phone' =>   $commande->getPanier()->getPhoneClient(),
+                            'codeCommande' =>  $commande->getCodeCommande(),
+                            'montant' => $commande->getMontant(),
+                            'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i'),
+                            'nombre_produit' =>   count($listProduitPanier),
+
+                            'produits' => $lff,
+                            'point_livraison' => $commande->getPointLivraison()->getLibelle()
+                        ];
+                        array_push($fCom, $cf);
+                    }
+                    // $listProduits = $serializer->serialize($lP, 'json');
+
+
+
+                }
+            }
+        }
+        return
+            new JsonResponse(
+                [
+
+                    'data'
+                    =>  $fCom
+                ],
+                200
+            );
     }
     /**
      * @Route("/dashboard/boutique", name="DashBoardboutiqueReadAll", methods={"GET"})
@@ -325,6 +446,12 @@ class DashBoardController extends AbstractController
                 }
 
                 if ($boutique->getUser()) {
+                    // $boutique->setDateFirstActivated(new \DateTimeImmutable());
+
+                    // $boutique->setDateLastDesactivated(new \DateTimeImmutable());
+
+                    // $this->em->persist($boutique);
+                    // $this->em->flush();
                     $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
@@ -332,6 +459,129 @@ class DashBoardController extends AbstractController
                         'titre' => $boutique->getTitre() ?? "Aucun",
                         'status' => $boutique->isStatus(),
                         'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'dateFirstActivated' => date_format($boutique->getDateFirstActivated(), 'Y-m-d H:i'),
+                        'dateLastDesactivated' => date_format($boutique->getDateLastDesactivated(), 'Y-m-d H:i'),
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' =>  $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
+
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
+
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
+                        // 'produits' => $listProduit,
+
+
+                    ];
+                    array_push($lB, $boutiqueU);
+                }
+            }
+        }
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $lB,
+                    'statusCode' => 200
+
+                ],
+                200
+            );
+    }
+
+
+    /**
+     * @Route("/dashboard/boutique/request", name="DashBoardboutiqueRequest", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function DashBoardboutiqueRequest(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        $lBoutique = $this->em->getRepository(Boutique::class)->findBy(['status' => false]);
+        if (!$lBoutique) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Aucune Boutique'
+            ], 203);
+        }
+
+
+        $lB = [];
+        foreach ($lBoutique  as $boutique) {
+            if ($boutique->getUser()) {
+
+                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $limgB = [];
+
+                foreach ($lBo  as $bo) {
+                    $limgB[]
+                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                }
+                if (empty($limgB)) {
+                    $limgB[]
+                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                }
+
+                if ($boutique->getUser()) {
+                    $boutiqueU =  [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'dateLastDesactivated' => date_format($boutique->getDateLastDesactivated(), 'Y-m-d H:i'),
 
                         'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                         'images' => $limgB,
@@ -371,6 +621,53 @@ class DashBoardController extends AbstractController
                 ],
                 200
             );
+    }
+    /**
+     * @Route("/dashboard/boutique/state", name="DashBoardboutiqueState", methods={"POST"})
+     * @param array $data doit contenir la keySecret  de l'utilsateur a modifier, le typeUser a affecter
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardboutiqueState(Request $request)
+    {
+        $data = $request->toArray();
+        if (empty($data['keySecret']) || empty($data['codeBoutique'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer   '
+            ], 400);
+        }
+
+        $keySecret = $data['keySecret'];
+        $codeBoutique = $data['codeBoutique'];
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+
+        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
+
+        if ($user->getTypeUser()->getId() != 1) {
+            return new JsonResponse([
+                'message' => 'Action impossible'
+
+            ], 400);
+        }
+
+        if (!$boutique->isStatus() && $boutique->getDateFirstActivated() == null) {
+
+            $boutique->setDateFirstActivated(new \DateTimeImmutable());
+        } else {
+            $boutique->setDateLastDesactivated(new \DateTimeImmutable());
+        }
+        $boutique->setStatus(!$boutique->isStatus());
+
+
+        $this->em->persist($boutique);
+        $this->em->flush();
+
+        return new JsonResponse([
+            'message' => 'Boutique modifiee avec success',
+
+            'id' =>  $boutique->getId()
+
+        ], 200);
     }
 
     /**
@@ -604,14 +901,6 @@ class DashBoardController extends AbstractController
 
 
 
-
-
-
-
-
-
-
-
     /**
      * @Route("/dashboard/user", name="DashBoardUser", methods={"GET"})
      * @param Request $request
@@ -674,6 +963,7 @@ class DashBoardController extends AbstractController
                         'prenom' => $user->getPrenom(),
                         'email' => $user->getEmail(),
                         'phone' => $user->getPhone(),
+                        'status_bool' => $user->isStatus(),
                         'status' => $user->isStatus() ? "Actif" : "inactif",
                         'keySecret' => $user->getKeySecret(),
                         'type_user_id' => $user->getTypeUser()->getId(),
@@ -725,49 +1015,867 @@ class DashBoardController extends AbstractController
     }
 
 
-
-
     /**
-     * @Route("/dashboard/boutique/state", name="DashBoardboutiqueState", methods={"POST"})
-     * @param array $data doit contenir la keySecret  de l'utilsateur a modifier, le typeUser a affecter
+     * @Route("/dashboard/client/state", name="DashBoardclientState", methods={"POST"})
      * @param Request $request
      * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
      */
-    public function DashBoardboutiqueState(Request $request)
+    public function DashBoardclientState(Request $request)
     {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
         $data = $request->toArray();
-        if (empty($data['keySecret']) || empty($data['codeBoutique'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayer   '
-            ], 400);
+
+
+
+        if (
+            empty($data['keySecret']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
         }
 
         $keySecret = $data['keySecret'];
-        $codeBoutique = $data['codeBoutique'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if ($admin->getTypeUser()->getId() == 1) {
 
-        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
+            if ($user) {
 
-        if ($user->getTypeUser()->getId() != 1) {
-            return new JsonResponse([
-                'message' => 'Action impossible'
 
-            ], 400);
+                $user->setStatus(!$user->isStatus());
+
+                $this->em->persist($user);
+                $this->em->flush();
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            =>  'success'
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Utilisateur introuvable'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+
+
+    /**
+     * @Route("/dashboard/admin/make", name="DashBoardadminMake", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function DashBoardadminMake(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
+        $possible = false;
+
+
+
+        if (
+            empty($data['keySecret']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
         }
 
-        $boutique->setStatus(!$boutique->isStatus());
+        $keySecret = $data['keySecret'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if ($admin->getTypeUser()->getId() == 1) {
+
+            if ($user) {
+
+                $typeUser = $this->em->getRepository(TypeUser::class)->findOneBy(['id' => 1]);
+                $user->setTypeUser($typeUser);
+
+                $this->em->persist($user);
+                $this->em->flush();
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            =>  'success'
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Utilisateur introuvable'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+
+
+    /**
+     * @Route("/dashboard/password/reset", name="PasswordReset", methods={"PATCH"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function PasswordReset(Request $request)
+    {
+        $data = $request->toArray();
+
+        if (
+            empty($data['keySecret']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $keySecret = $data['keySecret'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if ($admin->getTypeUser()->getId() == 1) {
+
+            if ($user) {
+
+
+
+                $npass =   $this->getNewPssw();
+
+                $password = $this->passwordHasher->hashPassword(
+                    $user,
+                    $npass
+                );
+                $user->setPassword($password);
+                $this->em->persist($user);
+                $this->em->flush();
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            =>  'success',
+                            'password'
+                            => $npass,
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Utilisateur introuvable'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+
+    /**
+     * @Route("/dashboard/livreur/make", name="DashBoardlivreurMake", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function DashBoardlivreurMake(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
+
+
+
+        if (
+            empty($data['keySecret']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $keySecret = $data['keySecret'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if ($admin) {
+            if ($admin->getTypeUser()->getId() == 1) {
+
+                if ($user) {
+
+
+
+                    $typeUser = $this->em->getRepository(TypeUser::class)->findOneBy(['id' => 3]);
+                    $user->setTypeUser($typeUser);
+                    $this->em->persist($user);
+                    $this->em->flush();
+
+
+                    return
+                        new JsonResponse(
+                            [
+                                'message'
+                                => 'success'
+                            ],
+                            200
+                        );
+                } else {
+                    return
+                        new JsonResponse([
+                            'data'
+                            => [],
+                            'message' => 'Utilisateur introuvable'
+                        ], 203);
+                }
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Aucune authorisation'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+    /**
+     * @Route("/dashboard/client/make", name="DashBoardclientMake", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function DashBoardclientMake(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
+
+
+
+        if (
+            empty($data['keySecret']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $keySecret = $data['keySecret'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if ($admin) {
+            if ($admin->getTypeUser()->getId() == 1) {
+
+                if ($user) {
+
+
+
+                    $typeUser = $this->em->getRepository(TypeUser::class)->findOneBy(['id' => 2]);
+                    $user->setTypeUser($typeUser);
+                    $this->em->persist($user);
+                    $this->em->flush();
+
+
+                    return
+                        new JsonResponse(
+                            [
+                                'message'
+                                => 'success'
+                            ],
+                            200
+                        );
+                } else {
+                    return
+                        new JsonResponse([
+                            'data'
+                            => [],
+                            'message' => 'Utilisateur introuvable'
+                        ], 203);
+                }
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Aucune authorisation'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+
+
+
+    /**
+     * @Route("/dashboard/notifications", name="DashBoardNotification", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la cle secrete de l'admin
+     * 
+     * 
+     */
+    public function DashBoardNotification(Request $request)
+    {
+
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        $list_notifications_final  = [];
+
+
+        $lNotification = $this->em->getRepository(Notification::class)->findAll();
+
+        foreach ($lNotification as $notification) {
 
 
 
 
-        $this->em->persist($boutique);
+            $notificationU = [
+                'id' => $notification->getId(),
+                'user_create' => $notification->getUser()->getNom() . " " . $notification->getUser()->getNom(),
+                'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+
+                'title' => $notification->getTitle(),
+                'description' => $notification->getDescription(),
+
+            ];
+
+            $list_notifications_final[] = $notificationU;
+        }
+
+        $datas
+            = $this->serializer->serialize(array_reverse($list_notifications_final), 'json');
+        return
+            new JsonResponse([
+                'data'
+                =>
+                JSON_DECODE($datas),
+
+            ], 200);
+    }
+
+    /**
+     * @Route("/dashboard/notifications", name="DashBoardNotificationAdd", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la cle secrete de l'admin
+     * 
+     * 
+     */
+    public function DashBoardNotificationAdd(Request $request)
+    {
+
+        $data = $request->toArray();
+
+
+
+        if (
+            empty($data['title'])
+            ||  empty($data['description']) ||
+            empty($data['adminkeySecret'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $title = $data['title'];
+        $description = $data['description'];
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+
+
+        $data = [
+
+            "title" => $title,
+            "message" => $description
+        ];
+
+
+        $this->myFunction->Socekt_Emit_general($data);
+
+
+        $notification = new Notification();
+        $notification->setTitle($title);
+        $notification->setDescription($description);
+        $notification->setUser($admin);
+        $this->em->persist($notification);
         $this->em->flush();
+        return
+            new JsonResponse([
+                'message'
+                =>
+                'success',
+
+            ], 200);
+    }
+
+
+
+    /**
+     * @Route("/dashboard/communication/list", name="DashBoardCommunicationList", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardCommunicationList(Request $request)
+    {
+
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        $communication = $this->em->getRepository(Communication::class)->findAll();
+        $listCommunication = [];
+        foreach ($communication as   $value) {
+
+            $listCommunication[] = [
+                'user_create' => $value->getClient()->getNom() . " " . $value->getClient()->getNom(),
+                'date' => date_format($value->getDateCreated(), 'Y-m-d H:i'),
+
+                'codeCommunication' => $value->getCodeCommunication(),
+            ];
+        }
+        return new JsonResponse([
+            'data' => $listCommunication,
+
+
+
+
+        ], 200);
+    }
+
+
+    /**
+     * @Route("/dashboard/communication/message/list", name="DashBoardCommunicationMessageList", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardCommunicationMessageList(Request $request)
+    {
+        $code = $request->query->get('code');
+
+        $communication = $this->em->getRepository(Communication::class)->findOneBy(['codeCommunication' => $code]);
+        $messagecommunication = $this->em->getRepository(MessageCommunication::class)->findBy(['communication' => $communication]);
+        $messages = [];
+        foreach ($messagecommunication as   $value) {
+
+            $messages[] = [
+                'message' => $value->getMessage(),
+                'is_service' =>       $value->getInitiateur()->getId()
+                    == $communication->getClient()->getId() ? 0 : 1,
+                'user_create' => $value->getInitiateur()->getNom() . " " . $value->getInitiateur()->getNom(),
+
+                'date' =>  $value->getDateEnvoi()->format('Y-m-d'),
+                'heure' =>  $value->getDateEnvoi()->format('H:i'),
+            ];
+        }
+        return new JsonResponse([
+            'data' => $messages,
+
+
+
+
+        ], 200);
+    }
+
+
+
+
+    /**
+     * @Route("/dashboard/negociation/list", name="DashBoardnegociationList", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardnegociationList(Request $request)
+    {
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+
+        $negociationProduit = $this->em->getRepository(NegociationProduit::class)->findAll();
+        $negociations = [];
+        foreach ($negociationProduit as   $value) {
+            $messageNegociationProduit = $this->em->getRepository(MessageNegociation::class)->findBy(['negociation' => $value]);
+            $lastElement = array_pop($messageNegociationProduit);
+
+            // Vérifier si $lastElement n'est pas nul avant de l'utiliser
+            if ($lastElement !== null) {
+                $negociations[] = [
+                    'codeNegociation' => $value->getCodeNegociation(),
+                    'prixNegocie' => $value->getPrixNegocie(),
+                    'titre_produit' =>  $value->getProduit()->getTitre(),
+                    'src_produit' =>/*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
+                    'last_message' => ($lastElement)->getMessage(),
+                    'date' =>  $value->getDateCreated()->format('Y-m-d'),
+                    'heure' =>  $value->getDateCreated()->format('H:i'),
+                ];
+            }
+        }
+        return new JsonResponse([
+            'data' => $negociations,
+
+
+
+        ], 200);
+    }
+    /**
+     * @Route("/dashboard/negociation/message/list", name="DashBoardnegociationMessageList", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function DashBoardnegociationMessageList(Request $request)
+    {
+        $code = $request->query->get('code');
+        $negociationProduit = $this->em->getRepository(NegociationProduit::class)->findOneBy(['codeNegociation' => $code]);
+        $messageNegociationProduit = $this->em->getRepository(MessageNegociation::class)->findBy(['negociation' => $negociationProduit]);
+        $messages = [];
+        foreach ($messageNegociationProduit as   $value) {
+            if ($negociationProduit->getInitiateur() && $negociationProduit->getProduit()->getBoutique()->getUser()) {
+                $messages[] = [
+                    'message' => $value->getMessage(),
+                    'emetteurId' =>  $value->isEmetteur() == true ? 0 : 1, 
+
+                    'date' =>  $value->getDateEnvoi()->format('Y-m-d'),
+                    'heure' =>  $value->getDateEnvoi()->format('H:i'),
+                ];
+            }
+        }
+        return new JsonResponse([
+            'data' => $messages,
+
+
+
+
+        ], 200);
+    }
+    /**
+     * @Route("/test/general/{indexw}", name="TestSocketGeneral", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function TestSocketGeneral($indexw)
+    {
+
+
+        // $host = 'http://localhost:3000';
+        // $first =   $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+        // $content = $first->getContent();
+        // $index = strpos($content, 0);
+        // $res = json_decode(substr($content, $index + 1), true);
+        // $sid = $res['sid'];
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => '40'
+        // ]);
+        // $this->clientWeb->request('GET', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+
+        $data = [
+
+            "indexw" => $indexw,
+            "message" => 'Id fugiat ex nulla veniam ea exercitation velit dolor ad. Minim exercitation magna officia ipsum. Nostrud eu officia ipsum pariatur cillum. Non labore amet non sunt ullamco eiusmod veniam laboris. Ea occaecat in excepteur velit commodo esse. Consectetur laborum in amet voluptate pariatur.'
+
+        ];
+
+        // $this->clientWeb->request('POST', "{$host}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        //     'body' => sprintf('42%s', json_encode($data))
+        // ]);
+        $this->myFunction->Socekt_Emit_general($data);
+
+        return $this->json([
+            'status'
+            =>   $data
+
+        ]);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function createNewJWT(UserPlateform $user)
+    {
+        $token = $this->jwt->create($user);
+
+        $datetime = new \DateTime();
+        $datetime->modify('+2592000 seconds');
+
+        $refreshToken = $this->jwtRefresh->create();
+
+        $refreshToken->setUsername($user->getUsername());
+        $refreshToken->setRefreshToken();
+        $refreshToken->setValid($datetime);
+
+        // Validate, that the new token is a unique refresh token
+        $valid = false;
+        while (false === $valid) {
+            $valid = true;
+            $errors = $this->validator->validate($refreshToken);
+            if ($errors->count() > 0) {
+                foreach ($errors as $error) {
+                    if ('refreshToken' === $error->getPropertyPath()) {
+                        $valid = false;
+                        $refreshToken->setRefreshToken();
+                    }
+                }
+            }
+        }
+
+        $this->jwtRefresh->save($refreshToken);
 
         return new JsonResponse([
-            'message' => 'Boutique modifiee avec success',
-
-            'id' =>  $boutique->getId()
-
+            'token' => $token,
+            'refreshToken' => $refreshToken->getRefreshToken()
         ], 200);
     }
     public function getTypeUsertoText($type)
@@ -824,5 +1932,23 @@ class DashBoardController extends AbstractController
                     'Une erreur systeme';
         }
         # code...
+    }
+    public function getNewPssw(/* $id */)
+    {
+
+        $chaine = '';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 7; ++$i) {
+            $chaine .= $listeCar[random_int(0, $max)];
+        }
+
+        $chaine .= '@';
+        for ($i = 0; $i < 2; ++$i) {
+            $chaine .= $listeCar[random_int(0, $max)];
+        }
+
+
+        return $chaine;
     }
 }
