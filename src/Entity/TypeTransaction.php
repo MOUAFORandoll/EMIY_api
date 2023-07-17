@@ -12,7 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 class TypeTransaction
 {
     /**
-     * id = 1 Achat, 2 Retrait
+     * id = 1 Achat, 2 Retrait, 3 Depot
      *
      */
     #[ORM\Id]

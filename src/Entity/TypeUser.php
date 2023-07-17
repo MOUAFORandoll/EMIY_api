@@ -31,7 +31,7 @@ class TypeUser
 
     #[ORM\Column(type: "boolean")]
     #[Groups(["create:typeUser", "read:typeUser"])]
-    private $status;
+    private $status = true;
 
 
 
@@ -42,6 +42,7 @@ class TypeUser
     public function __construct()
     {
         $this->users = new ArrayCollection();
+        $this->status = true;
     }
 
     public function getId(): ?int

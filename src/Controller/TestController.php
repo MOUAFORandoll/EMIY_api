@@ -7,9 +7,14 @@ use App\Entity\BoutiqueObject;
 use App\Entity\Category;
 use App\Entity\Commission;
 use App\Entity\Localisation;
+use App\Entity\ModePaiement;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Short;
+use App\Entity\TypeCommande;
+use App\Entity\TypePaiement;
+use App\Entity\TypeTransaction;
+use App\Entity\TypeUser;
 use App\Entity\UserPlateform;
 use Faker\Factory;
 use Lcobucci\JWT\Encoder;
@@ -357,9 +362,8 @@ class TestController extends AbstractController
         return $response;
     }
 
-
     /**
-     * @Route("/fakedata/addb", name="FakeDataAddBoutique", methods={"GET"})
+     * @Route("/emiy/init", name="EmiyInit", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -373,7 +377,208 @@ class TestController extends AbstractController
      * 
      * 
      */
-    public function FakeDataAddBoutique(Request $request)
+    public function EmiyInit(Request $request)
+    {
+        $typeU = $this->InitTypeUser();
+        $comminssion = $this->InitCommission();
+        $typeT = $this->InitTransaction();
+        $typeP = $this->InitPaiement();
+        $typeC = $this->InitCommande();
+        $typeM = $this->InitModePaiement();
+        $boutique = $this->InitBoutique();
+        $produit = $this->InitProduit();
+        $short = $this->InitShort();
+
+        return new JsonResponse([
+            'type_user' =>
+            $typeU,
+
+            'comminssion' =>
+            $comminssion,
+            'type_transaction' =>
+            $typeT, 'type_mode' =>
+            $typeM, 'type_comm' =>
+            $typeC,
+            'type_paiement' =>
+            $typeP, 'boutique' =>
+            $boutique,
+            'produit' =>
+            $produit, 'short' =>
+            $short, $produit,
+
+
+        ], 200);
+    }
+
+    /**
+     * @Route("/emiy/admin/init", name="EmiyAdminInit", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     *  
+     * 
+     * 
+     */
+    public function EmiyAdminInit(Request $request)
+    {
+
+
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => 1]);
+
+        $typeUser = $this->em->getRepository(TypeUser::class)->findOneBy(['id' => 1]);
+        $admin->setTypeUser($typeUser);
+
+        $this->em->persist($admin);
+
+        $this->em->flush();
+        return new JsonResponse(
+            [
+                'message' => 'Success',
+
+
+            ],
+            200
+        );
+    }
+
+
+    public function InitCommission()
+    {
+
+
+
+        $comminssion = new Commission();
+
+        $comminssion->setPourcentageProduit(2);
+        $comminssion->setFraisLivraisonProduit(250);
+        $comminssion->setFraisBuyLivreur(500);
+
+        $this->em->persist($comminssion);
+        $this->em->flush();
+
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+
+    public function InitTypeUser()
+    {
+
+        $t = ['Admin', 'Client', 'Livreur'];
+
+        for ($i = 0; $i < count($t); $i++) {
+            # code...
+
+            $typr = new TypeUser();
+
+            $typr->setLibelle($t[$i]);
+
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+
+
+    public function InitTransaction()
+    {
+
+        $t = ['Achat', 'Retrait', 'Depot'];
+
+        for ($i = 0; $i < count($t); $i++) {
+            # code...
+
+            $typr = new TypeTransaction();
+
+            $typr->setLibelle($t[$i]);
+
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+    public function InitPaiement()
+    {
+
+        $t = ['Livreur', 'Boutique'];
+
+        for ($i = 0; $i < count($t); $i++) {
+            # code...
+
+            $typr = new TypePaiement();
+
+            $typr->setLibelle($t[$i]);
+
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+    public function InitCommande()
+    {
+
+        $t = ['Commande normale', 'Commande negocie '];
+
+        for ($i = 0; $i < count($t); $i++) {
+            # code...
+
+            $typr = new TypeCommande();
+
+            $typr->setLibelle($t[$i]);
+
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+    public function InitModePaiement()
+    {
+
+        $t = ["Orange Money", 'Momo', 'Carte', 'K-Coin'];
+
+        for ($i = 0; $i < count($t); $i++) {
+            # code...
+
+            $typr = new ModePaiement();
+
+            $typr->setLibelle($t[$i]);
+
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+
+    public function InitBoutique()
     {
 
         $listImageBoutique = [];
@@ -439,23 +644,7 @@ class TestController extends AbstractController
             );
     }
 
-
-    /**
-     * @Route("/fakedata/addp", name="FakeDataAddProduit", methods={"GET"})
-     * @param Request $request
-     * @return JsonResponse
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
-     * @throws \Exception
-     * 
-     *  
-     * 
-     * 
-     */
-    public function FakeDataAddProduit(Request $request)
+    public function InitProduit()
     {
         $listImageProduit = [];
         $sourceDirProduit = 'images/produits';
@@ -510,23 +699,7 @@ class TestController extends AbstractController
             );
     }
 
-
-    /**
-     * @Route("/fakedata/adds", name="FakeDataAddShort", methods={"GET"})
-     * @param Request $request
-     * @return JsonResponse
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
-     * @throws \Exception
-     * 
-     *  
-     * 
-     * 
-     */
-    public function FakeDataAddShort(Request $request)
+    public function InitShort()
     {
 
 

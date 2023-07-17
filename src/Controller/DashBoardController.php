@@ -5,6 +5,7 @@ namespace App\Controller;
 use ApiPlatform\Core\Bridge\Symfony\Bundle\Test\Client;
 use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
+use App\Entity\Category;
 use App\Entity\Commande;
 use App\Entity\Communication;
 use App\Entity\Compte;
@@ -54,6 +55,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Dompdf\Dompdf;
 use Symfony\Component\Security\Core\Validator\Constraints\UserPassword;
 
+use Symfony\Component\String\Slugger\SluggerInterface;
 
 class DashBoardController extends AbstractController
 {
@@ -188,13 +190,17 @@ class DashBoardController extends AbstractController
             = $this->em->getRepository(Commande::class)->findAll();
 
         $listLivraison = $this->em->getRepository(ListCommandeLivreur::class)->findAll();
+        $listBoutique = $this->em->getRepository(Boutique::class)->findBy(['status' => false]);
 
         $data = [
+
             'nbr_users' => count($user),
             'nbr_commandes'
             => count($llcom),
             'nbr_livraisons'
             => count($listLivraison),
+
+            'nbr_boutiques' => count($listBoutique),
         ];
         return new JsonResponse([
 
@@ -1829,20 +1835,6 @@ class DashBoardController extends AbstractController
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public function createNewJWT(UserPlateform $user)
     {
         $token = $this->jwt->create($user);
@@ -1877,6 +1869,520 @@ class DashBoardController extends AbstractController
             'token' => $token,
             'refreshToken' => $refreshToken->getRefreshToken()
         ], 200);
+    }
+
+
+
+
+    /**
+     * @Route("/dashboard/category", name="categoryNew", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryNew(Request $request, SluggerInterface $slugger)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = $request->toArray();
+
+
+
+
+
+        if (
+            empty($data['adminkeySecret'])
+            || empty($data['libelle']) || empty($data['description'])
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+        $adminkeySecret = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+
+        // $file =  $request->files->get('file');
+        // if ($file) {
+        //     $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        //     // this is needed to safely include the file name as part of the URL
+        //     $safeFilenameData = $slugger->slug($originalFilenameData);
+        //     $newFilenameData  =
+        //         $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
+        //     $file->move(
+        //         $this->getParameter('category_object'),
+        //         $newFilenameData
+        //     );
+
+        $category = new Category();
+
+        $category->setLibelle($data['libelle'] ?? '');
+        $category->setDescription($data['description'] ?? '');
+        $category->setLogo('http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png');
+
+        $this->em->persist($category);
+        $this->em->flush();
+
+        return
+            new JsonResponse(
+                [
+                    'message'
+                    => 'success'
+                ],
+                200
+            );
+        // } else {
+        //     return
+        //         new JsonResponse([
+        //             'data'
+        //             => [],
+        //             'message' => 'Une Erreur est survenue'
+        //         ], 203);
+        // }
+    }
+
+    /**
+     * @Route("/dashboard/category/update", name="categoryUpdate", methods={"PATCH"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryUpdate(Request $request, SluggerInterface $slugger)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+        $data = [
+            'category' => $request->get('category'),
+            'keySecret' => $request->get('keySecret'),
+            'libelle' => $request->get('libelle'),
+            'description' => $request->get('description'),
+
+        ];
+
+
+
+
+
+        if (
+            empty($data['keySecret'])
+
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez recharger la page et reessayer   '
+                ],
+                400
+            );
+        }
+
+        $keySecret = $data['keySecret'];
+        $category = $data['category'];
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+
+
+        if ($user) {
+            if ($user->getTypeUser()->getId() == 1) {
+                $category = $this->em->getRepository(Category::class)->findOneBy(['category' => $category]);
+
+
+                $category->setLibelle($data['libelle'] ?? $category->getLibelle());
+                $category->setDescription($data['description'] ?? $category->getDescription());
+                $file =  $request->files->get('file');
+                if ($file) {
+                    $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    // this is needed to safely include the file name as part of the URL
+                    $safeFilenameData = $slugger->slug($originalFilenameData);
+                    $newFilenameData  =
+                        $this->myFunction->getUniqueNameProduit() . '.' . $file->guessExtension();
+                    $file->move(
+                        $this->getParameter('category_object'),
+                        $newFilenameData
+                    );
+
+                    $category->setLogo($newFilenameData);
+                }
+                $this->em->persist($category);
+                $this->em->flush();
+
+                return
+                    new JsonResponse(
+                        [
+                            'message'
+                            => 'success'
+                        ],
+                        200
+                    );
+            } else {
+                return
+                    new JsonResponse([
+                        'data'
+                        => [],
+                        'message' => 'Une Erreur est survenue'
+                    ], 203);
+            }
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucune authorisation'
+                ], 203);
+        }
+    }
+    /**
+     * @Route("/dashboard/category/status/change", name="categoryStatusChange", methods={"PATCH"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryStatusChange(Request $request, SluggerInterface $slugger)
+    {
+
+
+
+
+        $data = $request->toArray();
+
+        if (
+            empty($data['category']) ||
+            empty($data['adminkeySecret'])
+
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Veuillez renseigner les informations correctes'
+                ],
+                400
+            );
+        }
+
+        $category  =
+            $data['category'];
+        $adminkeySecret
+            = $data['adminkeySecret'];
+
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $adminkeySecret]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+
+
+        $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $category]);
+        $category->setStatus(
+            !$category->isStatus()
+        );
+        $this->em->persist($category);
+        $this->em->flush();
+
+        return
+            new JsonResponse(
+                [
+                    'message'
+                    => 'success'
+                ],
+                200
+            );
+    }
+
+
+    /**
+     * @Route("/dashboard/category", name="categoryReadAll", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     */
+    public function categoryReadAll(Request $request)
+    {
+
+        $possible = false;
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+
+
+        $lCategory = $this->em->getRepository(Category::class)->findAll();
+
+        if ($lCategory) {
+
+            $lC = [];
+            foreach ($lCategory  as $cat) {
+
+                $catU =  [
+                    'id' => $cat->getId(),
+                    'libelle' => $cat->getLibelle(),
+                    'description' => $cat->getDescription(),
+                    'logo' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/category/' . $cat->getLogo(),
+                    // 'titre' => $cat->getTitre(), 
+                    'status' => $cat->isStatus(),
+
+                ];
+                array_push($lC, $catU);
+            }
+            $lCategoryF =   $this->serializer->serialize($lC, 'json');
+
+            return
+                new JsonResponse(
+                    [
+                        'data'
+                        => JSON_DECODE($lCategoryF)
+                    ],
+                    200
+                );
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Aucun produit'
+                ], 203);
+        }
+    }
+
+
+    /**
+     * @Route("/dashboard/category/read/boutique", name="categoryReadBoutique", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryReadBoutique(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+        $possible = false;
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+        $admin = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$admin) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (
+            $admin->getTypeUser()->getId() != 1
+        ) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+        if (empty($request->get('id'))) {
+
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page   '
+            ], 400);
+        }
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $id = $request->get('id');
+        $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $id]);
+
+        $boutiques = $this->em->getRepository(Boutique::class)->findBy(['category' => $category]);
+
+        if ($boutiques) {
+
+            $lB = [];
+            foreach ($boutiques   as $boutique) {
+                if ($boutique->isStatus()) {
+                    $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                    $limgB = [];
+
+                    foreach ($lBo  as $bo) {
+                        $limgB[]
+                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                    }
+                    if (empty($limgB)) {
+                        $limgB[]
+                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                    }
+                    $boutiqueU =  [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
+
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' =>  $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
+
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
+
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
+                        // 'localisation' =>  $boutique->getLocalisation() ? [
+                        //     'ville' =>
+                        //     $boutique->getLocalisation()->getVille(),
+
+                        //     'longitude' =>
+                        //     $boutique->getLocalisation()->getLongitude(),
+                        //     'latitude' =>
+                        //     $boutique->getLocalisation()->getLatitude(),
+                        // ] : []
+                        // 'produits' => $listProduit,
+
+
+                    ];
+                    array_push($lB, $boutiqueU);
+                }
+            }
+            // $listProduits =   $this->serializer ->serialize($lP, 'json');
+
+            return
+                new JsonResponse(
+                    [
+                        'data'
+                        => /*  JSON_DECODE(
+                            $listProduits
+                        ) */ $lB,
+                        'statusCode' => 200
+                    ],
+                    200
+                );
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Une Erreur est survenue'
+                ], 203);
+        }
     }
     public function getTypeUsertoText($type)
     {

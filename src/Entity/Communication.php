@@ -15,7 +15,7 @@ class Communication
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
- 
+
     #[ORM\ManyToOne(inversedBy: 'communications')]
     private ?UserPlateform $client = null;
 
@@ -30,6 +30,8 @@ class Communication
 
     public function __construct()
     {
+        $this->dateCreated = new \DateTime();
+
         $this->messageCommunications = new ArrayCollection();
     }
     public function getId(): ?int

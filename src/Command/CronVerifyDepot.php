@@ -11,7 +11,7 @@ use App\Entity\TypePaiement;
 use App\Entity\TypeTransaction;
 use App\Entity\UserPlateform;
 use Dompdf\Dompdf;
-use Symfony\Component\Console\Command\Command;
+
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -24,7 +24,10 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Statement;
 use App\FunctionU\MyFunction;
 
-class CronVerifyDepot extends Command
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+
+class CronVerifyDepot extends  Command
 {
     private $em;
     private $myFunction;
@@ -47,7 +50,7 @@ class CronVerifyDepot extends Command
     {
         $this
             ->setName('app:verify-depot')
-            ->setDescription('Migrate data from MySQL to PostgreSQL');
+            ->setDescription('Cron de verification des depots');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
@@ -55,6 +58,7 @@ class CronVerifyDepot extends Command
 
 
 
+        $output->writeln('Debut verify depot.');
         $transactions = $this->em->getRepository(Transaction::class)->findBy(['status' => false]);
 
         foreach ($transactions as $transaction) {
@@ -92,7 +96,7 @@ class CronVerifyDepot extends Command
                     $this->em->persist(
                         $compte
                     );
-                    var_dump( $transaction->getToken(), );
+                    var_dump($transaction->getToken(),);
                     $this->em->flush();
                     $data = [
                         'canal' =>
@@ -103,13 +107,13 @@ class CronVerifyDepot extends Command
                             'message' => 'Recharge Effectue'
                         ]
                     ];
-                    $this->myFunction->Socekt_Emit('transaction',$data);
+                    $this->myFunction->Socekt_Emit('transaction', $data);
                 }
             }
         }
 
-        $output->writeln('Fini.');
+        $output->writeln('Fini. depot');
 
-        return Command::SUCCESS;
+        return  Command::SUCCESS;
     }
 }

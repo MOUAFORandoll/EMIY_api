@@ -7,7 +7,7 @@
         "php": ">=8.0.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
-        "api-platform/core": "^2.7.13",
+        "api-platform/core": "^2.6",
         "cache/redis-adapter": "^1.1",
         "doctrine/annotations": "^2.0",
         "doctrine/doctrine-bundle": "^2.9",
@@ -29,6 +29,7 @@
         "symfony/asset": "6.0.*",
         "symfony/cache": "5.4.*",
         "symfony/console": "6.0.*",
+        "symfony/debug-bundle": "6.0.*",
         "symfony/doctrine-messenger": "6.0.*",
         "symfony/dotenv": "6.0.*",
         "symfony/expression-language": "6.0.*",
@@ -41,7 +42,7 @@
         "symfony/mailer": "6.0.*",
         "symfony/mercure-bundle": "^0.3.5",
         "symfony/mime": "6.0.*",
-        "symfony/monolog-bundle": "^3.8.0",
+        "symfony/monolog-bundle": "^3.0",
         "symfony/notifier": "6.0.*",
         "symfony/process": "6.0.*",
         "symfony/property-access": "6.0.*",
@@ -61,22 +62,19 @@
         "symfony/yaml": "6.0.*",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/twig": "^2.12|^3.0",
-        "vich/uploader-bundle": "^1.19",
-        "fzaninotto/faker": "^1.0"
+        "vich/uploader-bundle": "^1.19"
     },
     "require-dev": {
         "doctrine/doctrine-fixtures-bundle": "^3.4",
         "phpunit/phpunit": "^9.5",
         "symfony/browser-kit": "6.0.*",
         "symfony/css-selector": "6.0.*",
-        "symfony/debug-bundle": "6.0.*",
         "symfony/maker-bundle": "^1.0",
         "symfony/phpunit-bridge": "^6.2",
         "symfony/stopwatch": "6.0.*",
         "symfony/web-profiler-bundle": "6.0.*"
     },
     "config": {
-        "process-timeout": 600,
         "allow-plugins": {
             "composer/package-versions-deprecated": true,
             "symfony/flex": true,

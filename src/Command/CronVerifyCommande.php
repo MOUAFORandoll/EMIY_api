@@ -1,5 +1,6 @@
 <?php
 
+
 namespace App\Command;
 
 use App\Controller\CommandeController;
@@ -11,7 +12,6 @@ use App\Entity\TypePaiement;
 use App\Entity\TypeTransaction;
 use App\Entity\UserPlateform;
 use Dompdf\Dompdf;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -24,7 +24,9 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Driver\Statement;
 use App\FunctionU\MyFunction;
 
-class CronVerifyCommande extends Command
+use Symfony\Component\Console\Command\Command ;
+
+class CronVerifyCommande extends  Command
 {
     private $em;
     private $myFunction;
@@ -47,12 +49,13 @@ class CronVerifyCommande extends Command
     {
         $this
             ->setName('app:verify-com')
-            ->setDescription('Migrate data from MySQL to PostgreSQL');
+            ->setDescription('Cron  de verification des commandes');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
 
+        $output->writeln('Debut verify Commande.');
 
 
         $commandes = $this->em->getRepository(Commande::class)->findBy(['statusBuy' => 0]);
@@ -87,13 +90,13 @@ class CronVerifyCommande extends Command
                             'canalEcouteBoutique' =>
                             $produit->getBoutique()->getCodeBoutique(),
                             'data' => [
-                                'typeEcoute' => 0, 
+                                'typeEcoute' => 0,
                                 'message' => 'Vous avez une nouvelle commande'
                             ]
                         ];
                         $output->writeln('Socker emit.');
 
-                        $this->myFunction->Socekt_Emit('commande' ,$data);
+                        $this->myFunction->Socekt_Emit('commande', $data);
                     }
                 }
 
@@ -140,7 +143,7 @@ class CronVerifyCommande extends Command
             }
         }
 
-        $output->writeln('Finish.');
+        $output->writeln('Finish. Commande');
 
         return Command::SUCCESS;
     }
