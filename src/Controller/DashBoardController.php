@@ -1761,7 +1761,7 @@ class DashBoardController extends AbstractController
             if ($negociationProduit->getInitiateur() && $negociationProduit->getProduit()->getBoutique()->getUser()) {
                 $messages[] = [
                     'message' => $value->getMessage(),
-                    'emetteurId' =>  $value->isEmetteur() == true ? 0 : 1, 
+                    'emetteurId' =>  $value->isEmetteur() == true ? 0 : 1.,
 
                     'date' =>  $value->getDateEnvoi()->format('Y-m-d'),
                     'heure' =>  $value->getDateEnvoi()->format('H:i'),
@@ -1931,7 +1931,7 @@ class DashBoardController extends AbstractController
                 return
                     'Une erreur systeme';
         }
-        # code...
+        # code... 
     }
     public function getNewPssw(/* $id */)
     {
