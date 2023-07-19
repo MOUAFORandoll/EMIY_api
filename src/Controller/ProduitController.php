@@ -348,7 +348,7 @@ class ProduitController extends AbstractController
      * 
      * 
      */
-    public function produitReadclient(Request $request, $index)
+    public function produitReadclient(Request $request)
     {
         $index =
             $request->get('page');
@@ -510,8 +510,7 @@ class ProduitController extends AbstractController
                 200
             );
     }
-
-
+ 
     /**
      * @Route("/produit/read/boutique", name="produitReadBoutique", methods={"POST"})
      * @param Request $request

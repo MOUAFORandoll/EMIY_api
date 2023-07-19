@@ -127,5 +127,123 @@ class CategoryController extends AbstractController
                     'message' => 'Aucun produit'
                 ], 203);
         }
-    } 
+    }
+
+
+    /**
+     * @Route("/category/read/boutique", name="categoryReadBoutiqueClient", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function categoryReadBoutiqueClient(Request $request)
+    {
+
+     
+
+        if (empty($request->get('id'))) {
+
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page   '
+            ], 400);
+        }
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $id = $request->get('id');
+        $category = $this->em->getRepository(Category::class)->findOneBy(['id' => $id]);
+
+        $boutiques = $this->em->getRepository(Boutique::class)->findBy(['category' => $category]);
+
+        if ($boutiques) {
+
+            $lB = [];
+            foreach ($boutiques   as $boutique) {
+                if ($boutique->isStatus()) {
+                    $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                    $limgB = [];
+
+                    foreach ($lBo  as $bo) {
+                        $limgB[]
+                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                    }
+                    if (empty($limgB)) {
+                        $limgB[]
+                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                    }
+                    $boutiqueU =  [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
+
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' =>  $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
+
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
+
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
+                        // 'localisation' =>  $boutique->getLocalisation() ? [
+                        //     'ville' =>
+                        //     $boutique->getLocalisation()->getVille(),
+
+                        //     'longitude' =>
+                        //     $boutique->getLocalisation()->getLongitude(),
+                        //     'latitude' =>
+                        //     $boutique->getLocalisation()->getLatitude(),
+                        // ] : []
+                        // 'produits' => $listProduit,
+
+
+                    ];
+                    array_push($lB, $boutiqueU);
+                }
+            }
+            // $listProduits =   $this->serializer ->serialize($lP, 'json');
+
+            return
+                new JsonResponse(
+                    [
+                        'data'
+                        => /*  JSON_DECODE(
+                            $listProduits
+                        ) */ $lB,
+                        'statusCode' => 200
+                    ],
+                    200
+                );
+        } else {
+            return
+                new JsonResponse([
+                    'data'
+                    => [],
+                    'message' => 'Une Erreur est survenue'
+                ], 203);
+        }
+    }
 }

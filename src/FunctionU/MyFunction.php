@@ -36,6 +36,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 class MyFunction
 {
     public $emetteur = 'admin@prikado.com';
+    public $host_serveur_socket;
 
     private $em;
     private $client;
@@ -47,6 +48,9 @@ class MyFunction
 
 
     ) {
+
+        $this->host_serveur_socket
+            =/*  $_SERVER['REQUEST_SCHEME'] . ://.  $_SERVER['SERVER_ADDR'] */ 'http://192.168.137.250' . ':3000';
         $this->client =
             $client;
         $this->em = $em;
@@ -90,7 +94,7 @@ class MyFunction
         $ExistCode1 = $this->em->getRepository(BoutiqueObject::class)->findOneBy(['src' => $chaine . 'png']);
         if ($ExistCode ||  $ExistCode1) {
             return
-                $this->getUniqueNameProduit();
+                $this->getUniqueNameBoutiqueImg();
         } else {
             return $chaine;
         }
@@ -681,26 +685,26 @@ class MyFunction
     {
 
 
-        $host_serveur_socket = 'http://localhost:3000';
-        $first =   $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+
+        $first =   $this->client->request('GET',   $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
         $content = $first->getContent();
         $index = strpos($content, 0);
         $res = json_decode(substr($content, $index + 1), true);
         $sid = $res['sid'];
-        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        $this->client->request('POST',  $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&sid={$sid}", [
             'body' => '40'
         ]);
-        // $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+        // $this->client->request('GET',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}");
         // $dataSign = ['signin', '350'];
         $dataEmit = [$canal, json_encode($data)];
 
-        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        // $this->client->request('POST',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42["%s", %s]', $userID, json_encode($dataEmit))
         // ]);
-        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        // $this->client->request('POST',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42%s',  json_encode($dataSign))
         // ]);
-        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        $this->client->request('POST',  $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&sid={$sid}", [
             'body' => sprintf('42%s',  json_encode($dataEmit))
         ]);
     }
@@ -709,26 +713,26 @@ class MyFunction
     {
 
 
-        $host_serveur_socket = 'http://localhost:3000';
-        $first =   $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
+
+        $first =   $this->client->request('GET',  $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&t=N8hyd6w");
         $content = $first->getContent();
         $index = strpos($content, 0);
         $res = json_decode(substr($content, $index + 1), true);
         $sid = $res['sid'];
-        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        $this->client->request('POST',  $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&sid={$sid}", [
             'body' => '40'
         ]);
-        // $this->client->request('GET', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}");
+        // $this->client->request('GET',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}");
         // $dataSign = ['signin', '350'];
         $dataEmit = ['general', json_encode($data)];
 
-        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        // $this->client->request('POST',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42["%s", %s]', $userID, json_encode($dataEmit))
         // ]);
-        // $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        // $this->client->request('POST',  $this->host_serveur_socket ."/socket.io/?EIO=4&transport=polling&sid={$sid}", [
         //     'body' => sprintf('42%s',  json_encode($dataSign))
         // ]);
-        $this->client->request('POST', "{$host_serveur_socket}/socket.io/?EIO=4&transport=polling&sid={$sid}", [
+        $this->client->request('POST',  $this->host_serveur_socket . "/socket.io/?EIO=4&transport=polling&sid={$sid}", [
             'body' => sprintf('42%s',  json_encode($dataEmit))
         ]);
     }

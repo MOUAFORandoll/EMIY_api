@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
         'normalization_context' => [
             'groups' => ['read:pointLivraison']
         ],
-        'security' => "is_granted('IS_AUTHENTICATED_FULLY')"
+
     ],
 ])]
 class PointLivraison

@@ -5,6 +5,7 @@ namespace App\EventSubscriber;
 use ApiPlatform\Core\EventListener\EventPriorities;
 use App\Entity\Communication;
 use App\Entity\Compte;
+use App\Entity\Parrainage;
 use App\Entity\TypeUser;
 use App\Entity\UserPlateform;
 use Doctrine\ORM\EntityManagerInterface;
@@ -64,12 +65,13 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
             $User->setTypeUser($typeUser);
 
 
-            $ExU = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => $User->getCodeParrain()]);
+            $ExU = $this->em->getRepository(UserPlateform::class)->findOneBy(['codeParrainage' => $User->getCodeParrainage()]);
             if ($ExU) {
 
                 $this->parrain($ExU, $User);
             }
 
+            $User->setCodeParrainage($this->generateCodeParainnage());
 
             $this->createCommunication($User);
             $this->createCompte($User);
@@ -109,13 +111,31 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
     public function parrain(UserPlateform $parrain, UserPlateform $fieul)
 
     {
+        if ($parrain->getId() != $fieul->getId()) {
+            $parrainage = new Parrainage();
+            $parrainage->setParrain($parrain);
+            $parrainage->setFieul($fieul);
+            $this->em->persist($parrainage);
+            $this->em->flush(); # code...
+        }
+    }
 
-        // $parrainage = new Parrainage();
+    public function generateCodeParainnage()
+    {
 
-        // $parrainage->setParrain($parrain);
-        // $parrainage->setFieul($fieul);
 
-        // $this->em->persist($parrainage);
-        // $this->em->flush();    # code...
+        $chaine = 'bt';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 13; ++$i) {
+            $chaine .= $listeCar[random_int(0, $max)];
+        }
+        $ExistCode = $this->em->getRepository(UserPlateform::class)->findOneBy(['codeParrainage' => $chaine]);
+        if ($ExistCode) {
+            return
+                $this->generateCodeParainnage();
+        } else {
+            return $chaine;
+        }
     }
 }

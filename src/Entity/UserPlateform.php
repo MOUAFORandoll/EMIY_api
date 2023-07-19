@@ -123,7 +123,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(type: "string",   nullable: true)]
     #[Groups(["create:user", "read:user"])]
-    private $codeParrain;
+    private $codeParrainage;
 
 
     #[ORM\Column(type: "string", length: 255, nullable: true)]
@@ -155,11 +155,15 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: MessageCommunication::class)]
     private Collection $messageCommunications;
 
+    #[ORM\OneToMany(mappedBy: 'parrain', targetEntity: Parrainage::class)]
+    private Collection $parrainages;
+
 
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
 
+        $this->status = true;
 
         $this->transactions = new ArrayCollection();
         $this->boutiques = new ArrayCollection();
@@ -174,6 +178,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->communications = new ArrayCollection();
         $this->messageNegociations = new ArrayCollection();
         $this->messageCommunications = new ArrayCollection();
+        $this->parrainages = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -496,14 +501,14 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getCodeParrain(): ?string
+    public function getCodeParrainage(): ?string
     {
-        return $this->codeParrain;
+        return $this->codeParrainage;
     }
 
-    public function setCodeParrain(string $codeParrain): self
+    public function setCodeParrainage(string $codeParrainage): self
     {
-        $this->codeParrain = $codeParrain;
+        $this->codeParrainage = $codeParrainage;
 
         return $this;
     }
@@ -754,6 +759,36 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($messageCommunication->getInitiateur() === $this) {
                 $messageCommunication->setInitiateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Parrainage>
+     */
+    public function getParrainages(): Collection
+    {
+        return $this->parrainages;
+    }
+
+    public function addParrainage(Parrainage $parrainage): static
+    {
+        if (!$this->parrainages->contains($parrainage)) {
+            $this->parrainages->add($parrainage);
+            $parrainage->setParrain($this);
+        }
+
+        return $this;
+    }
+
+    public function removeParrainage(Parrainage $parrainage): static
+    {
+        if ($this->parrainages->removeElement($parrainage)) {
+            // set the owning side to null (unless already changed)
+            if ($parrainage->getParrain() === $this) {
+                $parrainage->setParrain(null);
             }
         }
 

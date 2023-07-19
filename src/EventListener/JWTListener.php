@@ -38,6 +38,7 @@ class JWTListener implements EventSubscriberInterface
         $payload['prenom'] = $user->getPrenom();
         $payload['email'] = $user->getEmail();
         $payload['keySecret'] = $user->getKeySecret();
+        $payload['codeParrainnage'] = $user->getCodeParrainage();
         $payload['codeCommunication'] = $user->getCommunications()->first()->getCodeCommunication();
 
         $event->setData($payload);
@@ -51,6 +52,7 @@ class JWTListener implements EventSubscriberInterface
         $token->setAttribute('nom', $payload['nom']);
         $token->setAttribute('prenom', $payload['prenom']);
         $token->setAttribute('keySecret', $payload['keySecret']);
+        $token->setAttribute('codeParrainnage', $payload['codeParrainnage']);
         $token->setAttribute('email', $payload['email']);
         $token->setAttribute('codeCommunication', $payload['codeCommunication']);
     }

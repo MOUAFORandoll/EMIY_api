@@ -33,12 +33,14 @@ use Doctrine\Persistence\ManagerRegistry;
 
 use App\Entity\Connexion;
 use App\Entity\Localisation;
+use App\Entity\Parrainage;
 use App\Entity\TypeUser;
 use DateTime;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Knp\Component\Pager\PaginatorInterface;
 
 
 class UserManageController extends AbstractController
@@ -54,6 +56,7 @@ class UserManageController extends AbstractController
     private $jwtRefresh;
     private $validator;
     private $myFunction;
+    private $paginator;
 
     public function __construct(
         SerializerInterface $serializer,
@@ -61,6 +64,7 @@ class UserManageController extends AbstractController
         MailerInterface $mailer,
         HttpClientInterface $user,
         JWTTokenManagerInterface $jwt,
+        PaginatorInterface $paginator,
 
         ValidatorInterface
         $validator,
@@ -71,6 +75,7 @@ class UserManageController extends AbstractController
         $this->myFunction = $myFunction;
         $this->user = $user;
         $this->jwt = $jwt;
+        $this->paginator = $paginator;
 
         $this->validator = $validator;
         $this->mailer = $mailer;
@@ -666,7 +671,7 @@ class UserManageController extends AbstractController
             'status' => true,
         ], 200);
     }
-   
+
 
 
     /**
@@ -776,7 +781,7 @@ class UserManageController extends AbstractController
         }
     }
     /**
-     * @Route("/user/fieul", name="UserFieul", methods={"POST"})
+     * @Route("/user/fieul", name="UserFieul", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -791,37 +796,63 @@ class UserManageController extends AbstractController
     public function UserFieul(Request $request)
     {
 
-        $data       = $request->toArray();
 
-        if (empty($data['keySecret'])) {
+        $index =
+            $request->get('page') ?? 1;
+        if (empty($request->get('keySecret'))) {
 
             return new JsonResponse([
-                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+                'message' => 'Mauvais parametre de requete veuillez preciser vos identifiants '
             ], 400);
         }
-        $userUser = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
-        if ($userUser) {
-
-
-
-
-            $luser = $this->em->getRepository(UserPlateform::class)->findBy(['codeParrain' => $userUser->getId()]);
-
-            $datas
-                = $this->serializer->serialize(array_reverse($luser), 'json');
-            return
-                new JsonResponse([
-                    'data'
-                    =>
-                    JSON_DECODE($datas),
-
-                ], 200);
-        } else {
+        $userUser = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' =>   $request->get('keySecret')]);
+        $list_users_final = [];
+        if (!$userUser) {
             return new JsonResponse([
                 'data'
                 => [],
                 'message' => 'Aucun'
             ], 200);
         }
+        $lparrainages0 = $this->em->getRepository(Parrainage::class)->findBy(['parrain' => $userUser]);
+        $lparrainages = $this->paginator->paginate($lparrainages0, $index, 12);
+
+        foreach ($lparrainages as $par) {
+            $user = $par->getFieul();
+
+            $localisation = $user->getLocalisations()[count($user->getLocalisations()) - 1];
+            $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
+            if ($compte) {
+                $userU        = [
+                    'id' => $user->getId(),
+                    'nom' => $user->getNom(), 'prenom' => $user->getPrenom(),
+                    'email' => $user->getEmail(), 'phone' => $user->getPhone(),
+                    'status' => $user->isStatus(),
+
+                    'dateCreated' => date_format($user->getDateCreated(), 'Y-m-d H:i'),
+
+                ];
+
+                $list_users_final[] = $userU;
+            } else {
+                $newCompte = new Compte();
+
+                $newCompte->setUser($user);
+                $newCompte->setSolde(0);
+
+
+                $this->em->persist($newCompte);
+                $this->em->flush();    # code...
+            }
+        }
+        $datas
+            = $this->serializer->serialize(array_reverse($list_users_final), 'json');
+        return
+            new JsonResponse([
+                'data'
+                =>
+                JSON_DECODE($datas),
+
+            ], 200);
     }
 }

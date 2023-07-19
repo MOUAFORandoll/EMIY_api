@@ -8,6 +8,7 @@ use App\Entity\Category;
 use App\Entity\Commission;
 use App\Entity\Localisation;
 use App\Entity\ModePaiement;
+use App\Entity\PointLivraison;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Short;
@@ -388,6 +389,7 @@ class TestController extends AbstractController
         $boutique = $this->InitBoutique();
         $produit = $this->InitProduit();
         $short = $this->InitShort();
+        $point_l = $this->InitPointLivraison();
 
         return new JsonResponse([
             'type_user' =>
@@ -404,8 +406,8 @@ class TestController extends AbstractController
             $boutique,
             'produit' =>
             $produit, 'short' =>
-            $short, $produit,
-
+            $short, 'point_l' =>
+            $point_l,
 
         ], 200);
     }
@@ -505,6 +507,47 @@ class TestController extends AbstractController
 
             $typr->setLibelle($t[$i]);
 
+            $this->em->persist($typr);
+            $this->em->flush();
+        }
+        return new JsonResponse([
+            'message' => 'Success',
+
+
+        ], 200);
+    }
+
+    /**
+     * @Route("/emiy/admin/l", name="InitPointLivraison", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     *  
+     * 
+     * 
+     */
+    public function InitPointLivraison()
+    {
+
+
+
+        for ($i = 0; $i < 20; $i++) {
+            # code...
+            $faker = Factory::create();
+            $typr = new PointLivraison();
+
+            $typr->setLibelle($faker->name)
+                ->setVille(
+                    $faker->address
+                )
+
+                ->setQuartier($faker->name);
             $this->em->persist($typr);
             $this->em->flush();
         }
@@ -839,7 +882,32 @@ class TestController extends AbstractController
         ]);
     }
 
+    /**
+     * @Route("/test/general/{indexw}", name="TEST", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function TEST()
+    {
 
+
+
+        return $this->json(
+            $_SERVER
+
+        );
+    }
     /**
      * @Route("/test/general/{indexw}", name="TestSocketGeneral", methods={"GET"})
      * @param Request $request

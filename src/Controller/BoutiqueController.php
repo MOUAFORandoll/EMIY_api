@@ -509,7 +509,7 @@ class BoutiqueController extends AbstractController
 
                         foreach ($lProduitO  as $produit0) {
                             $lsImgP[]
-                                = ['id' => $produit0->getId(), 'src' => $_SERVER['SYMFONY_DEFAULT_ROUTE_URL'] . 'images/produits/' . $produit0->getSrc()];
+                                = ['id' => $produit0->getId(), 'src' => 'http' . '://' . $_SERVER['HTTP_HOST'] . 'images/produits/' . $produit0->getSrc()];
                         }
                         $listProduit[] = [
                             'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
