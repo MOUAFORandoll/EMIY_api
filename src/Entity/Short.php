@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ShortRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -37,6 +39,12 @@ class Short
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $preview = null;
 
+    #[ORM\OneToMany(mappedBy: 'short', targetEntity: ShortLike::class)]
+    private Collection $shortLikes;
+
+    #[ORM\OneToMany(mappedBy: 'short', targetEntity: ShortComment::class)]
+    private Collection $shortComments;
+
 
     public function getId(): ?int
     {
@@ -57,6 +65,8 @@ class Short
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
+        $this->shortLikes = new ArrayCollection();
+        $this->shortComments = new ArrayCollection();
     }
     public function getDateCreated(): ?\DateTimeInterface
     {
@@ -124,6 +134,66 @@ class Short
     public function setPreview(string $preview): self
     {
         $this->preview = $preview;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShortLike>
+     */
+    public function getShortLikes(): Collection
+    {
+        return $this->shortLikes;
+    }
+
+    public function addShortLike(ShortLike $shortLike): static
+    {
+        if (!$this->shortLikes->contains($shortLike)) {
+            $this->shortLikes->add($shortLike);
+            $shortLike->setShort($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShortLike(ShortLike $shortLike): static
+    {
+        if ($this->shortLikes->removeElement($shortLike)) {
+            // set the owning side to null (unless already changed)
+            if ($shortLike->getShort() === $this) {
+                $shortLike->setShort(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShortComment>
+     */
+    public function getShortComments(): Collection
+    {
+        return $this->shortComments;
+    }
+
+    public function addShortComment(ShortComment $shortComment): static
+    {
+        if (!$this->shortComments->contains($shortComment)) {
+            $this->shortComments->add($shortComment);
+            $shortComment->setShort($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShortComment(ShortComment $shortComment): static
+    {
+        if ($this->shortComments->removeElement($shortComment)) {
+            // set the owning side to null (unless already changed)
+            if ($shortComment->getShort() === $this) {
+                $shortComment->setShort(null);
+            }
+        }
 
         return $this;
     }

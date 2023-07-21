@@ -158,6 +158,15 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'parrain', targetEntity: Parrainage::class)]
     private Collection $parrainages;
 
+    #[ORM\OneToMany(mappedBy: 'user_plateform', targetEntity: UserObject::class)]
+    private Collection $userObjects;
+
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: ShortLike::class)]
+    private Collection $shortLikes;
+
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: ShortComment::class)]
+    private Collection $shortComments;
+
 
     public function __construct()
     {
@@ -179,6 +188,9 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->messageNegociations = new ArrayCollection();
         $this->messageCommunications = new ArrayCollection();
         $this->parrainages = new ArrayCollection();
+        $this->userObjects = new ArrayCollection();
+        $this->shortLikes = new ArrayCollection();
+        $this->shortComments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -789,6 +801,96 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($parrainage->getParrain() === $this) {
                 $parrainage->setParrain(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserObject>
+     */
+    public function getUserObjects(): Collection
+    {
+        return $this->userObjects;
+    }
+
+    public function addUserObject(UserObject $userObject): static
+    {
+        if (!$this->userObjects->contains($userObject)) {
+            $this->userObjects->add($userObject);
+            $userObject->setUserPlateform($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserObject(UserObject $userObject): static
+    {
+        if ($this->userObjects->removeElement($userObject)) {
+            // set the owning side to null (unless already changed)
+            if ($userObject->getUserPlateform() === $this) {
+                $userObject->setUserPlateform(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShortLike>
+     */
+    public function getShortLikes(): Collection
+    {
+        return $this->shortLikes;
+    }
+
+    public function addShortLike(ShortLike $shortLike): static
+    {
+        if (!$this->shortLikes->contains($shortLike)) {
+            $this->shortLikes->add($shortLike);
+            $shortLike->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShortLike(ShortLike $shortLike): static
+    {
+        if ($this->shortLikes->removeElement($shortLike)) {
+            // set the owning side to null (unless already changed)
+            if ($shortLike->getClient() === $this) {
+                $shortLike->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShortComment>
+     */
+    public function getShortComments(): Collection
+    {
+        return $this->shortComments;
+    }
+
+    public function addShortComment(ShortComment $shortComment): static
+    {
+        if (!$this->shortComments->contains($shortComment)) {
+            $this->shortComments->add($shortComment);
+            $shortComment->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShortComment(ShortComment $shortComment): static
+    {
+        if ($this->shortComments->removeElement($shortComment)) {
+            // set the owning side to null (unless already changed)
+            if ($shortComment->getClient() === $this) {
+                $shortComment->setClient(null);
             }
         }
 

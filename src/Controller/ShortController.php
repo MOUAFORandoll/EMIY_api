@@ -7,8 +7,10 @@ use App\Entity\BoutiqueObject;
 use App\Entity\Category;
 use App\Entity\Localisation;
 use App\Entity\ModePaiement;
-use App\Entity\ProduitObject;
+use App\Entity\ShortLike;
+use App\Entity\ShortObject;
 use App\Entity\Short;
+use App\Entity\ShortComment;
 use App\Entity\UserPlateform;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -59,7 +61,7 @@ class ShortController extends AbstractController
     }
 
     /**
-     * @Route("/short/read/{index}", name="ShortRead", methods={"GET"})
+     * @Route("/short/read", name="ShortRead", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -74,12 +76,14 @@ class ShortController extends AbstractController
      * 
      * 
      */
-    public function ShortRead($index)
+    public function ShortRead(Request $request)
     {
 
         $pagination = 10;
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
-
+        $index =
+            $request->get('page');
 
         $lShortF = [];
 
@@ -147,7 +151,10 @@ class ShortController extends AbstractController
                     'description' => $short->getDescription() ?? "Aucun",
                     'status' => $short->isStatus(),
                     'Preview' =>  $short->getPreview(),
+                    'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
                     'src' =>  $short->getSrc(),
+                    'nbre_like' => count($this->ListLikeShort($short)),
+                    'nbre_commentaire' => count($this->ListCommentShort($short)),
                     'date' =>
                     date_format($short->getDateCreated(), 'Y-m-d H:i'),
                     'boutique' =>  $boutiqueU
@@ -172,6 +179,275 @@ class ShortController extends AbstractController
                 200
             );
     }
+
+
+
+    /**
+     * @Route("/like/short", name="LikeShortNew", methods={"POST"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function LikeShortNew(Request $request)
+    {
+        $data = $request->toArray();
+        if (empty($data['id'])  || empty($data['keySecret'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer'
+            ], 400);
+        }
+        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $data['id']]);
+        if (!$short) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+
+
+        if ($user) {
+
+            $existLikeShort = $this->em->getRepository(ShortLike::class)->findOneBy(['short' => $short, 'client' => $user]);
+            if ($existLikeShort) {
+
+                $existLikeShort->setLike_short(!$existLikeShort->isLike_short());
+                $this->em->persist($existLikeShort);
+            } else {
+                $likeShort = new ShortLike();
+
+                $likeShort->setShort($short);
+                $likeShort->setClient($user);
+                // $likeShort->setLike_short(1);
+                $this->em->persist($likeShort);
+            }
+
+
+
+
+            $this->em->flush();
+            $boutique = $short->getBoutique();
+
+            if (!$boutique) {
+
+                return new JsonResponse([
+                    'message' => 'Une erreur est survenue'
+
+                ], 203);
+            }
+
+
+
+
+            if ($boutique->isStatus()) {
+                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $limgB = [];
+
+                foreach ($lBo  as $bo) {
+                    $limgB[]
+                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                }
+                if (empty($limgB)) {
+                    $limgB[]
+                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                }
+                $boutiqueU =  [
+                    'codeBoutique' => $boutique->getCodeBoutique(),
+                    'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                    'description' => $boutique->getDescription() ?? "Aucune",
+                    'titre' => $boutique->getTitre() ?? "Aucun",
+                    'status' => $boutique->isStatus(),
+                    'note' => $this->myFunction->noteBoutique($boutique->getId()),
+
+                    'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                    'images' => $limgB,
+                    'localisation' =>  $boutique->getLocalisation() ? [
+                        'ville' =>
+                        $boutique->getLocalisation()->getVille(),
+
+                        'longitude' =>
+                        $boutique->getLocalisation()->getLongitude(),
+                        'latitude' =>
+                        $boutique->getLocalisation()->getLatitude(),
+                    ] : [
+                        'ville' =>
+                        'incertiane',
+
+                        'longitude' =>
+                        0.0,
+                        'latitude' =>
+                        0.0,
+                    ]
+                ];
+            }
+
+
+
+
+            $shortF =  [
+
+                'id' => $short->getId(),
+                'titre' => $short->getTitre() ?? "Aucun",
+                'description' => $short->getDescription() ?? "Aucun",
+                'status' => $short->isStatus(),
+                'Preview' =>  $short->getPreview(),
+                'src' =>  $short->getSrc(),
+                'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                'nbre_like' => count($this->ListLikeShort($short)),
+                'nbre_commentaire' => count($this->ListCommentShort($short)),
+                'date' =>
+                date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                'boutique' =>  $boutiqueU
+
+
+
+
+            ];
+
+            return new JsonResponse([
+                'message' => 'Like ajoute.',
+                'short' =>  $shortF
+
+            ], 200);
+        } else {
+            return new JsonResponse([
+                'message' => 'Une erreur est survenue'
+
+            ], 203);
+        }
+    }
+
+
+
+    /**
+     * @Route("/comment/short", name="CommentShortNew", methods={"POST"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function CommentShortNew(Request $request)
+    {
+        $data = $request->toArray();
+        if (empty($data['id']) || empty($data['keySecret']) || empty($data['comment'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer'
+            ], 400);
+        }
+        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $data['id']]);
+        if (!$short) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+        if (!$user) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+        $comm = $data['comment'];
+
+
+
+        $comment = new ShortComment();
+
+        $comment->setShort($short);
+        $comment->setClient($user);
+        $comment->setComment($comm);
+        $this->em->persist($comment);
+
+
+        $this->em->flush();
+
+        $profile      = count($comment->getClient()->getUserObjects())  == 0 ? '' :  $comment->getClient()->getUserObjects()->first()->getSrc();
+
+        $commentaire =  [
+
+            'id' => $comment->getId(), 'date' =>
+            date_format($short->getDateCreated(), 'Y-m-d H:i'),
+            'commentaire' => $comment->getComment() ?? "Aucun",
+            'username' => $comment->getClient()->getNom() . ' ' . $comment->getClient()->getPreNom() ?? "Aucun",
+            'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+
+
+
+        ];
+        return new JsonResponse([
+            'message' => 'Commentaire ajoute.',
+            'commentaire' =>  $commentaire
+
+        ], 200);
+    }
+
+
+    public function ListLikeShort(Short $short)
+    {
+
+        $likeList = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1]);
+        return $likeList;
+    }
+
+
+    public function ListCommentShort(Short $short)
+    {
+
+        $likeList = $this->em->getRepository(ShortComment::class)->findBy(['short' => $short]);
+        return $likeList;
+    }
+
+    /**
+     * @Route("/comment/short/{index}", name="CommentShortList", methods={"GET"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function CommentShortList($index)
+    {
+
+        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $index]);
+        if (!$short) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+        $commentList = $this->em->getRepository(ShortComment::class)->findBy(['short' => $short]);
+        $listCommentaires = [];
+        foreach ($commentList as $comm) {
+
+
+            $profile      = count($comm->getClient()->getUserObjects())  == 0 ? '' :  $comm->getClient()->getUserObjects()->first()->getSrc();
+
+            $commentaire =  [
+
+                'id' => $comm->getId(),
+                'date' =>
+                date_format($short->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
+                'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
+                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+
+
+            ];
+            $listCommentaires[] =  $commentaire;
+        }
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $listCommentaires,
+
+
+                ],
+                200
+            );
+    } 
 
     /**
      * @Route("/short/boutique/read", name="ShortBoutiqueRead", methods={"POST"})
@@ -306,7 +582,7 @@ class ShortController extends AbstractController
         // dd($file);
 
         if ($file &&   $boutique) {
-            $nameFile                 = $this->myFunction->getUniqueNameProduit();
+            $nameFile                 = $this->myFunction->getUniqueNameShort();
             $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
             // this is needed to safely include the file name as part of the URL
             $safeFilenameData = $slugger->slug($originalFilenameData);
@@ -358,7 +634,7 @@ class ShortController extends AbstractController
             }
         }
         // } catch (\Exception $e) {
-        //     // Une erreur s'est produite, annulez la transaction
+        //     // Une erreur s'est shorte, annulez la transaction
 
         //     return new JsonResponse([
         //         'message' => 'Une erreur est survenue',

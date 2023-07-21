@@ -38,7 +38,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 use App\Entity\UserPlateform;
 
-class NotationController  extends AbstractController
+class NotationLikeController  extends AbstractController
 {
 
     private $myFunction;
@@ -135,6 +135,71 @@ class NotationController  extends AbstractController
 
             ], 203);
         }
+    }
+
+
+    /**
+     * @Route("/like/produit", name="LikeUserRead", methods={"GET"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function LikeUserRead(Request $request)
+    {
+
+
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        if (!$user) {
+            return new JsonResponse(
+                [
+                    'message' => 'Desolez l\'utilisateur en question a des contraintes',
+
+                ],
+                203
+            );
+        }
+        $likeList = $this->em->getRepository(LikeProduit::class)->findBy(['client' => $user, 'like_produit' => 1]);
+
+        $lP = [];
+        foreach ($likeList  as $like) {
+
+
+            $produit = $like->getProduit();
+
+            $lsImgP    = [];
+            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+            foreach ($lProduitO as $produit0) {
+                $lsImgP[]
+                    = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+            }
+            $produitU = [
+
+                'id' => $produit->getId(),
+                'like' => $this->myFunction->isLike_produit($produit->getId()),
+                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
+                'codeProduit' => $produit->getCodeProduit(),
+                'boutique' => $produit->getBoutique()->getTitre(),
+                'description' => $produit->getDescription(),
+                'titre' => $produit->getTitre(),
+                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+                'quantite' => $produit->getQuantite(),
+                'prix' => $produit->getPrixUnitaire(),
+                'status' => $produit->isStatus(),
+                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                'images' => $lsImgP
+
+            ];
+            $lP[] = $produitU;
+        }
+        return new JsonResponse([
+
+            'data' =>
+            $lP
+
+        ], 200);
     }
 
 

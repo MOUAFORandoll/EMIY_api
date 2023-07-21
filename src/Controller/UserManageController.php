@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\Compte;
+use App\Entity\UserObject;
 use App\Entity\UserPlateform;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
@@ -83,19 +84,14 @@ class UserManageController extends AbstractController
 
 
     /**
-     * @Route("/user/get", name="getUserX", methods={"POST"})
+     * @Route("/user/get", name="getUserX", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      */
     public function getUserX(Request $request)
     {
-        $data = $request->toArray();
-        if (empty($data['keySecret'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayer '
-            ], 203);
-        }
-        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
 
@@ -106,13 +102,18 @@ class UserManageController extends AbstractController
 
             ], 203);
         }
-        $localisation = $user->getLocalisations()[count($user->getLocalisations()) - 1];
+        $localisation = $user->getLocalisations()->first();
+        $profile      = count($user->getUserObjects())  == 0 ? '' : $user->getUserObjects()->first()->getSrc();
+        // $user->getUserObjects()[count($user->getUserObjects()) - 1]->getSrc();
         $userU = [
             'id' => $user->getId(),
             'nom' => $user->getNom(), 'prenom' => $user->getPrenom(),
             'email' => $user->getEmail(), 'phone' => $user->getPhone(),
             'status' => $user->isStatus(),
             'typeUser' => $user->getTypeUser()->getId(),
+            'profile' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+
+
             'dateCreated' => date_format($user->getDateCreated(), 'Y-m-d H:i'),
             'localisation' =>    $localisation  ? [
                 'ville' =>
@@ -820,7 +821,9 @@ class UserManageController extends AbstractController
         foreach ($lparrainages as $par) {
             $user = $par->getFieul();
 
-            $localisation = $user->getLocalisations()[count($user->getLocalisations()) - 1];
+            $localisation
+                = count($user->getLocalisations()) == 0 ? null : $user->getLocalisations()[count($user->getLocalisations()) - 1];
+            $profile      = count($user->getUserObjects())  == 0 ? '' : $user->getUserObjects()->first()->getSrc();
             $compte = $this->em->getRepository(Compte::class)->findOneBy(['user' => $user]);
             if ($compte) {
                 $userU        = [
@@ -828,7 +831,17 @@ class UserManageController extends AbstractController
                     'nom' => $user->getNom(), 'prenom' => $user->getPrenom(),
                     'email' => $user->getEmail(), 'phone' => $user->getPhone(),
                     'status' => $user->isStatus(),
+                    'profile' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
 
+                    'localisation' =>    $localisation  ? [
+                        'ville' =>
+                        $localisation->getVille(),
+
+                        'longitude' =>
+                        $localisation->getLongitude(),
+                        'latitude' =>
+                        $localisation->getLatitude(),
+                    ] : [],
                     'dateCreated' => date_format($user->getDateCreated(), 'Y-m-d H:i'),
 
                 ];
@@ -854,5 +867,92 @@ class UserManageController extends AbstractController
                 JSON_DECODE($datas),
 
             ], 200);
+    }
+
+
+    /**
+     * @Route("/user/image/new", name="UserImage", methods={"POST"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function UserImage(Request $request, SluggerInterface $slugger)
+    {
+
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+        $possible = false;
+
+
+
+
+
+        if (
+            empty($request->get('keySecret'))
+
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Une erreur est survenue'
+                ],
+                400
+            );
+        }
+
+        $keySecret = $request->get('keySecret');
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        if (
+            !$user
+        ) {
+            return new JsonResponse(
+                [
+                    'message' => 'Utilisateur introuvable'
+                ],
+                400
+            );
+        }
+
+
+
+        $file =  $request->files->get('file');
+
+        $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        // this is needed to safely include the file name as part of the URL
+        $safeFilenameData = $slugger->slug($originalFilenameData);
+        $newFilenameData =
+            $this->myFunction->getUniqueNameBoutiqueImg() . '.' . $file->guessExtension();
+
+        $file->move(
+            $this->getParameter('users_object'),
+            $newFilenameData
+        );
+        $UserObject = new UserObject();
+
+        $UserObject->setSrc($newFilenameData);
+        $UserObject->setUserPlateform($user);
+        $this->em->persist($UserObject);
+        $this->em->flush();
+
+        return
+            new JsonResponse(
+                [
+                    'message'
+                    =>  'success',
+
+                ],
+                200
+            );
     }
 }

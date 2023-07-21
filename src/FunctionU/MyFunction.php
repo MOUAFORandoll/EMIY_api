@@ -17,6 +17,8 @@ use App\Entity\NotationBoutique;
 use App\Entity\LikeProduit;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
+use App\Entity\Short;
+use App\Entity\ShortLike;
 use App\Entity\Transaction;
 use App\Entity\UserPlateform;
 use Doctrine\ORM\EntityManagerInterface;
@@ -473,6 +475,12 @@ class MyFunction
 
         return ($notes != null) ? true : false;
     }
+    public function userlikeShort(  $short, UserPlateform $user)
+    { 
+        $notes = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1,'client' => $user]);
+
+        return ($notes != null) ? true : false;
+    }
     public function userabonnementBoutique($boutique,   $user)
     {
         if (!$user) {
@@ -754,5 +762,22 @@ class MyFunction
         } else {
             return $code;
         }
+    }
+    /**
+     * Summary of getUniqueNameShort
+     * @return string
+     */
+    public function getUniqueNameShort()
+    {
+
+
+        $code = 'cn';
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        for ($i = 0; $i < 18; ++$i) {
+            $code .= $listeCar[random_int(0, $max)];
+        }
+
+        return $code;
     }
 }

@@ -11,7 +11,7 @@ class Compte
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: "integer")]
-    private $id;
+    private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: UserPlateform::class, inversedBy: "comptes")]
     private $user;

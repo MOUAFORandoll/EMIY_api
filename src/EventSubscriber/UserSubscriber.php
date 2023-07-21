@@ -66,7 +66,10 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
 
 
             $ExU = $this->em->getRepository(UserPlateform::class)->findOneBy(['codeParrainage' => $User->getCodeParrainage()]);
-            if ($ExU) {
+            if (
+                $ExU
+              
+            ) {
 
                 $this->parrain($ExU, $User);
             }

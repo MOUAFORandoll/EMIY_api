@@ -15,11 +15,10 @@ app.use(async ({ request, response }, next) => {
     if (request.url.startsWith('/short') || !request.query.video /* || !request.query.video.match(/^[a-z0-9-_] +\.(mp4)$/i)  */) {
 
         const video = resolve('../public/videos/shorts', request.query.video)
+        console.log('--------------------------video');
         console.log(video);
         const range = request.header.range
         if (!range) {
-
-
             response.type = extname(video);
             response.body = createReadStream(video)
             return next();
