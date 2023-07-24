@@ -167,6 +167,9 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: ShortComment::class)]
     private Collection $shortComments;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: ShortCommentLike::class)]
+    private Collection $shortCommentLikes;
+
 
     public function __construct()
     {
@@ -191,6 +194,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->userObjects = new ArrayCollection();
         $this->shortLikes = new ArrayCollection();
         $this->shortComments = new ArrayCollection();
+        $this->shortCommentLikes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -891,6 +895,36 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($shortComment->getClient() === $this) {
                 $shortComment->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ShortCommentLike>
+     */
+    public function getShortCommentLikes(): Collection
+    {
+        return $this->shortCommentLikes;
+    }
+
+    public function addShortCommentLike(ShortCommentLike $shortCommentLike): static
+    {
+        if (!$this->shortCommentLikes->contains($shortCommentLike)) {
+            $this->shortCommentLikes->add($shortCommentLike);
+            $shortCommentLike->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeShortCommentLike(ShortCommentLike $shortCommentLike): static
+    {
+        if ($this->shortCommentLikes->removeElement($shortCommentLike)) {
+            // set the owning side to null (unless already changed)
+            if ($shortCommentLike->getClient() === $this) {
+                $shortCommentLike->setClient(null);
             }
         }
 

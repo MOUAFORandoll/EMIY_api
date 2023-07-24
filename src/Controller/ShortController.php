@@ -11,6 +11,7 @@ use App\Entity\ShortLike;
 use App\Entity\ShortObject;
 use App\Entity\Short;
 use App\Entity\ShortComment;
+use App\Entity\ShortCommentLike;
 use App\Entity\UserPlateform;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -330,17 +331,10 @@ class ShortController extends AbstractController
     public function CommentShortNew(Request $request)
     {
         $data = $request->toArray();
-        if (empty($data['id']) || empty($data['keySecret']) || empty($data['comment'])) {
+        if ((empty($data['id']) && empty($data['idRef'])) || empty($data['keySecret']) || empty($data['comment'])) {
             return new JsonResponse([
                 'message' => 'Veuillez recharger la page et reessayer'
             ], 400);
-        }
-        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $data['id']]);
-        if (!$short) {
-            return new JsonResponse([
-                'message' => 'short introuvable '
-
-            ], 203);
         }
 
 
@@ -357,7 +351,20 @@ class ShortController extends AbstractController
 
         $comment = new ShortComment();
 
-        $comment->setShort($short);
+        if (!empty($data['id']) && empty($data['idRef'])) {
+            $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $data['id']]);
+
+            $comment->setShort($short);
+        }
+        if (empty($data['id']) && !empty($data['idRef'])) {
+
+            $commentRef = $this->em->getRepository(ShortComment::class)->findOneBy(['id' => $data['idRef']]);
+
+            $comment->setReferenceCommentaire($commentRef);
+        }
+
+
+
         $comment->setClient($user);
         $comment->setComment($comm);
         $this->em->persist($comment);
@@ -370,11 +377,14 @@ class ShortController extends AbstractController
         $commentaire =  [
 
             'id' => $comment->getId(), 'date' =>
-            date_format($short->getDateCreated(), 'Y-m-d H:i'),
+            date_format($comment->getDateCreated(), 'Y-m-d H:i'),
             'commentaire' => $comment->getComment() ?? "Aucun",
             'username' => $comment->getClient()->getNom() . ' ' . $comment->getClient()->getPreNom() ?? "Aucun",
             'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
-
+            'nbre_com' => count($this->ListCommentComment($comment)),
+            'sub_responses' => false,
+            'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comment)),
+            'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comment, $user),
 
 
         ];
@@ -384,6 +394,90 @@ class ShortController extends AbstractController
 
         ], 200);
     }
+
+
+
+    /**
+     * @Route("/like/comment", name="LikeComment", methods={"POST"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function LikeComment(Request $request)
+    {
+        $data = $request->toArray();
+        if (empty($data['id'])  || empty($data['keySecret'])) {
+            return new JsonResponse([
+                'message' => 'Veuillez recharger la page et reessayer'
+            ], 400);
+        }
+        $com = $this->em->getRepository(ShortComment::class)->findOneBy(['id' => $data['id']]);
+        if (!$com) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $data['keySecret']]);
+
+
+        if ($user) {
+
+            $existLikeShortCom = $this->em->getRepository(ShortCommentLike::class)->findOneBy(['shortComment' => $com, 'client' => $user]);
+            if ($existLikeShortCom) {
+
+                $existLikeShortCom->setLike_comment(!$existLikeShortCom->isLike_comment());
+                $this->em->persist($existLikeShortCom);
+            } else {
+                $likeShortCom = new ShortCommentLike();
+
+                $likeShortCom->setShortComment($com);
+                $likeShortCom->setClient($user);
+                // $likeShortCom->setLike_short(1);
+                $this->em->persist($likeShortCom);
+            }
+
+
+
+
+            $this->em->flush();
+
+
+            $profile      = count($com->getClient()->getUserObjects())  == 0 ? '' :  $com->getClient()->getUserObjects()->first()->getSrc();
+
+
+
+            $commentaire =  [
+
+                'id' => $com->getId(),
+                'date' =>
+                date_format($com->getDateCreated(), 'Y-m-d H:i'),
+
+                'commentaire' => $com->getComment() ?? "Aucun",
+                'username' => $com->getClient()->getNom() . ' ' . $com->getClient()->getPreNom() ?? "Aucun",
+                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'nbre_com' => count($this->ListCommentComment($com)),
+                'sub_responses' => false,
+                'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($com)),
+                'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($com, $user),
+
+            ];
+
+            return new JsonResponse([
+                'message' => 'Like ajoute.',
+                'commentaire' =>  $commentaire
+
+            ], 200);
+        } else {
+            return new JsonResponse([
+                'message' => 'Une erreur est survenue'
+
+            ], 203);
+        }
+    }
+
 
 
     public function ListLikeShort(Short $short)
@@ -401,16 +495,34 @@ class ShortController extends AbstractController
         return $likeList;
     }
 
+    public function ListCommentComment(ShortComment $ShortComment)
+    {
+
+        $comList = $this->em->getRepository(ShortComment::class)->findBy(['reference_commentaire' => $ShortComment]);
+        return $comList;
+    }
+    public function ListLikeCommentShort(ShortComment $shortComment)
+    {
+
+        $likeComList = $this->em->getRepository(ShortCommentLike::class)->findBy(['shortComment' => $shortComment, 'like_comment' => 1,]);
+        return $likeComList;
+    }
+
     /**
-     * @Route("/comment/short/{index}", name="CommentShortList", methods={"GET"})
+     * @Route("/comment/short/", name="CommentShortList", methods={"GET"})
       
      * @param Request $request
      * @return JsonResponse
      */
-    public function CommentShortList($index)
+    public function CommentShortList(Request $request)
     {
 
-        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $index]);
+        $pagination = 10;
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $idShort =
+            $request->get('idShort');
+        $short = $this->em->getRepository(Short::class)->findOneBy(['id' => $idShort]);
         if (!$short) {
             return new JsonResponse([
                 'message' => 'short introuvable '
@@ -428,10 +540,13 @@ class ShortController extends AbstractController
 
                 'id' => $comm->getId(),
                 'date' =>
-                date_format($short->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
+                date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
                 'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
-
+                'nbre_com' => count($this->ListCommentComment($comm)),
+                'sub_responses' => false,
+                'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
 
             ];
             $listCommentaires[] =  $commentaire;
@@ -441,16 +556,140 @@ class ShortController extends AbstractController
             new JsonResponse(
                 [
                     'data'
-                    =>  $listCommentaires,
+                    => array_reverse($listCommentaires),
 
 
                 ],
                 200
             );
-    } 
+    }
+
+
 
     /**
-     * @Route("/short/boutique/read", name="ShortBoutiqueRead", methods={"POST"})
+     * @Route("/comment/comment/short/", name="CommentCommentShortList", methods={"GET"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function CommentCommentShortList(Request $request)
+    {
+
+        $pagination = 10;
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $idRef =
+            $request->get('idRef');
+        $Commmentaire = $this->em->getRepository(ShortComment::class)->findOneBy(['id' => $idRef]);
+        if (!$Commmentaire) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+        $commentList = $this->em->getRepository(ShortComment::class)->findBy(['reference_commentaire' => $Commmentaire]);
+        $listCommentaires = [];
+        foreach ($commentList as $comm) {
+
+
+
+
+
+            $profile      = count($comm->getClient()->getUserObjects())  == 0 ? '' :  $comm->getClient()->getUserObjects()->first()->getSrc();
+
+            $commentaire =  [
+
+                'id' => $comm->getId(),
+                'date' =>
+                date_format($Commmentaire->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
+                'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
+                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'nbre_com' =>  0, //count($this->ListCommentComment($comm)),
+                'sub_responses' => false,
+                'target_user' => '',
+                'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
+
+            ];
+            $listCommentaires[] =  $commentaire;
+            $listCommentaires = array_merge($listCommentaires, $this->getSubComment($comm, $user));
+        }
+
+        usort($listCommentaires, function ($a, $b) {
+            return $a['date'] <=> $b['date'];
+        });
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    => /* array_reverse */ ($listCommentaires),
+
+
+                ],
+                200
+            );
+    }
+    // Fonction de comparaison pour trier les objets par leur attribut DateTime
+    function compareByDateTime($a, $b)
+    {
+        return $a['date'] <=> $b['date'];
+    }
+
+    public function   getSubComment($commming, $user)
+    {
+        $listCommentaires = [];
+
+        $commentList = $this->em->getRepository(ShortComment::class)->findBy(['reference_commentaire' => $commming]);
+        foreach ($commentList as $comm) {
+            $profile      = count($comm->getClient()->getUserObjects())  == 0 ? '' :  $comm->getClient()->getUserObjects()->first()->getSrc();
+
+            $commentaire =  [
+
+                'id' => $comm->getId(),
+                'date' =>
+                date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
+                'username' => $comm->getClient()->getNom(),
+                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'nbre_com' => /* count($this->ListCommentComment($comm)) */ 0,
+                'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
+                'sub_responses' => true,
+                'target_user' => $commming->getClient()->getNom(),
+            ];
+            $listCommentaires[] = $commentaire;
+            $listCommentaires = array_merge($listCommentaires, $this->getSubComment($comm, $user));
+        }
+        return $listCommentaires;
+    }
+    /**
+     * @Route("/comment/delete", name="Dell", methods={"GET"})
+      
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function Dell(Request $request)
+    {
+
+
+        $short = $this->em->getRepository(ShortComment::class)->findOneBy(['id' => 3]);
+
+        $this->em->remove($short);
+        $this->em->flush();
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    => '',
+
+
+                ],
+                200
+            );
+    }
+
+    /**
+     * @Route("/short/boutique/read", name="ShortBoutiqueRead", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -475,15 +714,11 @@ class ShortController extends AbstractController
 
 
         $lShortF = [];
-        $data = $request->toArray();
-        if (empty($data['codeBoutique'])) {
-            return new JsonResponse([
-                'message' => 'Veuillez recharger la page et reessayer   '
-            ], 400);
-        }
+        
 
         // $keySecret = $data['keySecret'];
-        $codeBoutique = $data['codeBoutique'];
+        $codeBoutique =
+        $request->get('codeBoutique') ;
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
 
         $lShort = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
@@ -493,16 +728,18 @@ class ShortController extends AbstractController
 
 
             $shortF =  [
-
                 'id' => $short->getId(),
                 'titre' => $short->getTitre() ?? "Aucun",
                 'description' => $short->getDescription() ?? "Aucun",
                 'status' => $short->isStatus(),
-                'src' =>  $short->getSrc(),
                 'Preview' =>  $short->getPreview(),
-                'srcBoutique' => 'd',
+
+                'src' =>  $short->getSrc(),
+                'nbre_like' => count($this->ListLikeShort($short)),
+                'nbre_commentaire' => count($this->ListCommentShort($short)),
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),
+
 
 
 

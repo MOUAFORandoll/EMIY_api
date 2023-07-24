@@ -18,6 +18,8 @@ use App\Entity\LikeProduit;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Short;
+use App\Entity\ShortComment;
+use App\Entity\ShortCommentLike;
 use App\Entity\ShortLike;
 use App\Entity\Transaction;
 use App\Entity\UserPlateform;
@@ -475,9 +477,15 @@ class MyFunction
 
         return ($notes != null) ? true : false;
     }
-    public function userlikeShort(  $short, UserPlateform $user)
-    { 
-        $notes = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1,'client' => $user]);
+    public function userlikeShort($short, UserPlateform $user)
+    {
+        $notes = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1, 'client' => $user]);
+
+        return ($notes != null) ? true : false;
+    }
+    public function userlikeShortCom(ShortComment $shortComment, UserPlateform $user)
+    {
+        $notes = $this->em->getRepository(ShortCommentLike::class)->findBy(['shortComment' => $shortComment, 'like_comment' => 1, 'client' => $user]);
 
         return ($notes != null) ? true : false;
     }
