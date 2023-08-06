@@ -51,7 +51,7 @@ class MyFunction
 
     const
         BACK_END_URL =
-        'http://192.168.137.17:8000';
+        'http://172.20.10.10:8000';
     const
         PAGINATION = 15;
     public function __construct(

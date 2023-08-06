@@ -176,6 +176,9 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'recepteur', targetEntity: Notification::class)]
     private Collection $notification_recepteur;
 
+    #[ORM\OneToMany(mappedBy: 'client', targetEntity: UserReadShort::class)]
+    private Collection $userReadShorts;
+
 
     public function __construct()
     {
@@ -203,6 +206,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->shortCommentLikes = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->notification_recepteur = new ArrayCollection();
+        $this->userReadShorts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -993,6 +997,36 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($notificationRecepteur->getRecepteur() === $this) {
                 $notificationRecepteur->setRecepteur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserReadShort>
+     */
+    public function getUserReadShorts(): Collection
+    {
+        return $this->userReadShorts;
+    }
+
+    public function addUserReadShorts(UserReadShort $userReadShorts): static
+    {
+        if (!$this->userReadShorts->contains($userReadShorts)) {
+            $this->userReadShorts->add($userReadShorts);
+            $userReadShorts->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserReadShorts(UserReadShort $userReadShorts): static
+    {
+        if ($this->userReadShorts->removeElement($userReadShorts)) {
+            // set the owning side to null (unless already changed)
+            if ($userReadShorts->getClient() === $this) {
+                $userReadShorts->setClient(null);
             }
         }
 

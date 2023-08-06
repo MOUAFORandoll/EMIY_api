@@ -48,6 +48,9 @@ class Short
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $codeShort = null;
 
+    #[ORM\OneToMany(mappedBy: 'short', targetEntity: UserReadShort::class)]
+    private Collection $userReadShorts;
+
 
     public function getId(): ?int
     {
@@ -70,6 +73,7 @@ class Short
         $this->dateCreated = new \DateTime();
         $this->shortLikes = new ArrayCollection();
         $this->shortComments = new ArrayCollection();
+        $this->userReadShorts = new ArrayCollection();
     }
     public function getDateCreated(): ?\DateTimeInterface
     {
@@ -209,6 +213,36 @@ class Short
     public function setCodeShort(?string $codeShort): static
     {
         $this->codeShort = $codeShort;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserReadShort>
+     */
+    public function getUserReadShorts(): Collection
+    {
+        return $this->userReadShorts;
+    }
+
+    public function addUserReadShorts(UserReadShort $userReadShorts): static
+    {
+        if (!$this->userReadShorts->contains($userReadShorts)) {
+            $this->userReadShorts->add($userReadShorts);
+            $userReadShorts->setShort($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserReadShorts(UserReadShort $userReadShorts): static
+    {
+        if ($this->userReadShorts->removeElement($userReadShorts)) {
+            // set the owning side to null (unless already changed)
+            if ($userReadShorts->getShort() === $this) {
+                $userReadShorts->setShort(null);
+            }
+        }
 
         return $this;
     }

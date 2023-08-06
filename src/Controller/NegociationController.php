@@ -169,7 +169,7 @@ class NegociationController extends AbstractController
             'data' => [
                 'message' => $message,
                 'emetteurId' =>  $emetteur->getId(),
-
+                'id' =>  $messageProduit->getId(),
                 'date' =>  $messageProduit->getDateEnvoi()->format('Y-m-d'),
                 'heure' =>  $messageProduit->getDateEnvoi()->format('H:i'),
             ]
@@ -216,7 +216,7 @@ class NegociationController extends AbstractController
                     'codeNegociation' => $value->getCodeNegociation(),
                     'prixNegocie' => $value->getPrixNegocie(),
                     'titre_produit' =>  $value->getProduit()->getTitre(),
-                    'src_produit' =>$this->myFunction::BACK_END_URL . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
+                    'src_produit' => $this->myFunction::BACK_END_URL . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
                     'last_message' => ($lastElement)->getMessage(),
                     'date' =>  $value->getDateCreated()->format('H:i')
                 ];

@@ -36,6 +36,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\FunctionU\MyFunction;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Knp\Component\Pager\PaginatorInterface;
+use App\Entity\UserReadShort;
 
 class ShortController extends AbstractController
 {
@@ -80,7 +81,7 @@ class ShortController extends AbstractController
     public function ShortRead(Request $request)
     {
 
-        $pagination = 10;
+
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $page =
@@ -88,7 +89,8 @@ class ShortController extends AbstractController
 
         $lShortF = [];
 
-        $result = $this->em->getRepository(Short::class)->findAll();
+        $result =
+            $this->filterShortForUserRead($this->em->getRepository(Short::class)->findAll(),  $user);
         $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
         foreach ($lShort as $short) {
 
@@ -175,6 +177,32 @@ class ShortController extends AbstractController
                 ],
                 200
             );
+    }
+    public function filterShortForUserRead($shortList, $user)
+    {
+        // Créer deux tableaux pour stocker les vidéos lues et non lues
+        $unreadShorts = [];
+        $readShorts = [];
+
+        // Parcourir la liste des vidéos
+        foreach ($shortList as $short) {
+            // Vérifier si l'utilisateur a déjà consulté la vidéo
+            $exist = $this->em->getRepository(UserReadShort::class)->findOneBy(['short' => $short, 'client' => $user]);
+
+            // Si la vidéo est marquée comme lue par l'utilisateur
+            if ($exist) {
+                // Ajouter la vidéo dans le tableau des vidéos lues
+                $readShorts[] = $short;
+            } else {
+                // Sinon, ajouter la vidéo dans le tableau des vidéos non lues
+                $unreadShorts[] = $short;
+            }
+        }
+
+        // Fusionner les tableaux des vidéos non lues et des vidéos lues pour obtenir la liste triée
+        $sortedShortList = array_merge($unreadShorts, $readShorts);
+
+        return $sortedShortList;
     }
 
 
@@ -830,6 +858,183 @@ class ShortController extends AbstractController
     }
 
     /**
+     * @Route("/short/user/read", name="UserReadShort", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function UserReadShort(Request $request,)
+    {
+
+        $short = $this->em->getRepository(Short::class)->findOneBy(['codeShort' => $request->get('codeShort')]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' =>  $request->get('keySecret')]);
+
+        // dd($file);
+
+        if (!$short ||   !$user) {
+
+            return new JsonResponse(
+                [
+                    'message' => 'Verifier votre requette',
+                    // 'data'=> $data
+                ],
+                400
+            );
+        }
+        $exist = $this->em->getRepository(UserReadShort::class)->findOneBy(['short' =>  $short, 'client' => $user]);
+        if ($exist) {
+            $exist->setDateCreated(new \DateTime());
+            $this->em->persist($exist);
+            $this->em->flush();
+
+            return
+                new JsonResponse(
+                    [
+                        'message'
+                        =>  'success'
+                    ],
+                    200
+                );
+        }
+
+        $read = new UserReadShort();
+        $read->setClient($user);
+        $read->setShort($short);
+        $this->em->persist($read);
+        $this->em->flush();
+
+        return
+            new JsonResponse(
+                [
+                    'message'
+                    =>  'success'
+                ],
+                200
+            );
+    }
+
+    /**
+     * @Route("/short/for/boutique/read", name="ShortBoutiqueReadFor", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function ShortBoutiqueReadFor(Request $request)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+
+
+
+
+        $lShortF = [];
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $page =
+            $request->get('page');
+
+        // $keySecret = $data['keySecret'];
+        $codeBoutique =
+            $request->get('codeBoutique');
+        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
+        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+        $limgB = [];
+
+        foreach ($lBo  as $bo) {
+            $limgB[]
+                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+        }
+        if (empty($limgB)) {
+            $limgB[]
+                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+        }
+        $boutiqueU =  [
+            'codeBoutique' => $boutique->getCodeBoutique(),
+            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+            'description' => $boutique->getDescription() ?? "Aucune",
+            'titre' => $boutique->getTitre() ?? "Aucun",
+            'status' => $boutique->isStatus(),
+            'note' => $this->myFunction->noteBoutique($boutique->getId()),
+
+            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+            'images' => $limgB,
+            'localisation' =>  $boutique->getLocalisation() ? [
+                'ville' =>
+                $boutique->getLocalisation()->getVille(),
+
+                'longitude' =>
+                $boutique->getLocalisation()->getLongitude(),
+                'latitude' =>
+                $boutique->getLocalisation()->getLatitude(),
+            ] : [
+                'ville' =>
+                'incertiane',
+
+                'longitude' =>
+                0.0,
+                'latitude' =>
+                0.0,
+            ]
+        ];
+
+        $result = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
+        $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
+        foreach ($lShort as $short) {
+
+
+
+
+            $shortF =  [
+
+                'id' => $short->getId(),
+                'titre' => $short->getTitre() ?? "Aucun",
+                'description' => $short->getDescription() ?? "Aucun",
+                'status' => $short->isStatus(),
+                'Preview' =>  $short->getPreview(),
+                'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                'src' =>  $short->getSrc(),
+                'codeShort' =>
+                $short->getCodeShort(), 'nbre_like' => count($this->ListLikeShort($short)),
+                'nbre_commentaire' => count($this->ListCommentShort($short)),
+                'date' =>
+                date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                'boutique' =>  $boutiqueU
+
+            ];
+            array_push($lShortF, $shortF);
+        }
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $lShortF,
+                ],
+                200
+            );
+    }
+    /**
      * @Route("/short/boutique/read", name="ShortBoutiqueRead", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
@@ -861,6 +1066,45 @@ class ShortController extends AbstractController
         $codeBoutique =
             $request->get('codeBoutique');
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
+        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+        $limgB = [];
+
+        foreach ($lBo  as $bo) {
+            $limgB[]
+                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+        }
+        if (empty($limgB)) {
+            $limgB[]
+                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+        }
+        $boutiqueU =  [
+            'codeBoutique' => $boutique->getCodeBoutique(),
+            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+            'description' => $boutique->getDescription() ?? "Aucune",
+            'titre' => $boutique->getTitre() ?? "Aucun",
+            'status' => $boutique->isStatus(),
+            'note' => $this->myFunction->noteBoutique($boutique->getId()),
+
+            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+            'images' => $limgB,
+            'localisation' =>  $boutique->getLocalisation() ? [
+                'ville' =>
+                $boutique->getLocalisation()->getVille(),
+
+                'longitude' =>
+                $boutique->getLocalisation()->getLongitude(),
+                'latitude' =>
+                $boutique->getLocalisation()->getLatitude(),
+            ] : [
+                'ville' =>
+                'incertiane',
+
+                'longitude' =>
+                0.0,
+                'latitude' =>
+                0.0,
+            ]
+        ];
 
         $lShort = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
         foreach ($lShort as $short) {
@@ -876,12 +1120,14 @@ class ShortController extends AbstractController
                 'Preview' =>  $short->getPreview(),
                 'codeShort' =>
                 $short->getCodeShort(),
-                'src' =>  $short->getSrc(),
+                'src' =>  $short->getSrc(), 'is_like' =>   $boutique->getUser() == null ? false : $this->myFunction->userlikeShort($short, $boutique->getUser()),
+
                 'nbre_like' => count($this->ListLikeShort($short)),
                 'nbre_commentaire' => count($this->ListCommentShort($short)),
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),
-
+                'boutique'
+                => $boutiqueU
 
 
 
