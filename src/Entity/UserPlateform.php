@@ -170,6 +170,12 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: ShortCommentLike::class)]
     private Collection $shortCommentLikes;
 
+    #[ORM\OneToMany(mappedBy: 'initiateur', targetEntity: Notification::class)]
+    private Collection $notifications;
+
+    #[ORM\OneToMany(mappedBy: 'recepteur', targetEntity: Notification::class)]
+    private Collection $notification_recepteur;
+
 
     public function __construct()
     {
@@ -195,6 +201,8 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->shortLikes = new ArrayCollection();
         $this->shortComments = new ArrayCollection();
         $this->shortCommentLikes = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
+        $this->notification_recepteur = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -925,6 +933,66 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($shortCommentLike->getClient() === $this) {
                 $shortCommentLike->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setInitiateur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            // set the owning side to null (unless already changed)
+            if ($notification->getInitiateur() === $this) {
+                $notification->setInitiateur(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotificationRecepteur(): Collection
+    {
+        return $this->notification_recepteur;
+    }
+
+    public function addNotificationRecepteur(Notification $notificationRecepteur): static
+    {
+        if (!$this->notification_recepteur->contains($notificationRecepteur)) {
+            $this->notification_recepteur->add($notificationRecepteur);
+            $notificationRecepteur->setRecepteur($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotificationRecepteur(Notification $notificationRecepteur): static
+    {
+        if ($this->notification_recepteur->removeElement($notificationRecepteur)) {
+            // set the owning side to null (unless already changed)
+            if ($notificationRecepteur->getRecepteur() === $this) {
+                $notificationRecepteur->setRecepteur(null);
             }
         }
 

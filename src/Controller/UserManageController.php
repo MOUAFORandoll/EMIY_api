@@ -111,7 +111,7 @@ class UserManageController extends AbstractController
             'email' => $user->getEmail(), 'phone' => $user->getPhone(),
             'status' => $user->isStatus(),
             'typeUser' => $user->getTypeUser()->getId(),
-            'profile' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+            'profile' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
 
 
             'dateCreated' => date_format($user->getDateCreated(), 'Y-m-d H:i'),
@@ -798,7 +798,7 @@ class UserManageController extends AbstractController
     {
 
 
-        $index =
+        $page =
             $request->get('page') ?? 1;
         if (empty($request->get('keySecret'))) {
 
@@ -816,7 +816,7 @@ class UserManageController extends AbstractController
             ], 200);
         }
         $lparrainages0 = $this->em->getRepository(Parrainage::class)->findBy(['parrain' => $userUser]);
-        $lparrainages = $this->paginator->paginate($lparrainages0, $index, 12);
+        $lparrainages = $this->paginator->paginate($lparrainages0, $page, $this->myFunction::PAGINATION);
 
         foreach ($lparrainages as $par) {
             $user = $par->getFieul();
@@ -831,7 +831,7 @@ class UserManageController extends AbstractController
                     'nom' => $user->getNom(), 'prenom' => $user->getPrenom(),
                     'email' => $user->getEmail(), 'phone' => $user->getPhone(),
                     'status' => $user->isStatus(),
-                    'profile' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                    'profile' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
 
                     'localisation' =>    $localisation  ? [
                         'ville' =>

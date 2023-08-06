@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Const\ApiUrl;
 use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Category;
@@ -38,7 +39,6 @@ use Knp\Component\Pager\PaginatorInterface;
 
 class ShortController extends AbstractController
 {
-
     private $em;
     private   $serializer;
     private $paginator;
@@ -50,7 +50,7 @@ class ShortController extends AbstractController
         PaginatorInterface $paginator,
         HttpClientInterface $clientWeb,
         MyFunction
-        $myFunction
+        $myFunction,
 
     ) {
         $this->em = $em;
@@ -83,34 +83,36 @@ class ShortController extends AbstractController
         $pagination = 10;
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
-        $index =
+        $page =
             $request->get('page');
 
         $lShortF = [];
 
         $result = $this->em->getRepository(Short::class)->findAll();
-        $lShort = $this->paginator->paginate($result, $index, 12);
+        $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
         foreach ($lShort as $short) {
+
+
+            // $short->setCodeShort($this->myFunction->getUniqueNameShort());
+            // $this->em->persist($short);
+            // $this->em->flush();
 
 
 
             $boutique = $short->getBoutique();
 
             if ($boutique) {
-
-
-
                 if ($boutique->isStatus()) {
                     $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                     $limgB = [];
 
                     foreach ($lBo  as $bo) {
                         $limgB[]
-                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                            = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                     }
                     if (empty($limgB)) {
                         $limgB[]
-                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                            = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     }
                     $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),
@@ -140,31 +142,27 @@ class ShortController extends AbstractController
                             0.0,
                         ]
                     ];
+
+
+                    $shortF =  [
+
+                        'id' => $short->getId(),
+                        'titre' => $short->getTitre() ?? "Aucun",
+                        'description' => $short->getDescription() ?? "Aucun",
+                        'status' => $short->isStatus(),
+                        'Preview' =>  $short->getPreview(),
+                        'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                        'src' =>  $short->getSrc(),
+                        'codeShort' =>
+                        $short->getCodeShort(), 'nbre_like' => count($this->ListLikeShort($short)),
+                        'nbre_commentaire' => count($this->ListCommentShort($short)),
+                        'date' =>
+                        date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                        'boutique' =>  $boutiqueU
+
+                    ];
+                    array_push($lShortF, $shortF);
                 }
-
-
-
-
-                $shortF =  [
-
-                    'id' => $short->getId(),
-                    'titre' => $short->getTitre() ?? "Aucun",
-                    'description' => $short->getDescription() ?? "Aucun",
-                    'status' => $short->isStatus(),
-                    'Preview' =>  $short->getPreview(),
-                    'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                    'src' =>  $short->getSrc(),
-                    'nbre_like' => count($this->ListLikeShort($short)),
-                    'nbre_commentaire' => count($this->ListCommentShort($short)),
-                    'date' =>
-                    date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                    'boutique' =>  $boutiqueU
-
-
-
-
-                ];
-                array_push($lShortF, $shortF);
             }
         }
 
@@ -174,8 +172,111 @@ class ShortController extends AbstractController
                 [
                     'data'
                     =>  $lShortF,
+                ],
+                200
+            );
+    }
 
 
+    /**
+     * @Route("/short/read/unique", name="ShortReadUnique", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function ShortReadUnique(Request $request)
+    {
+
+
+        $boutiqueU = [];
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $short =     ($request->get('id')  != 'null')   ?  $this->em->getRepository(Short::class)->findOneBy(['id' => $request->get('id')]) : $this->em->getRepository(Short::class)->findOneBy(['codeShort' => $request->get('codeShort')]);
+        if (!$short) {
+            return new JsonResponse([
+                'message' => 'short introuvable '
+
+            ], 203);
+        }
+        $boutique = $short->getBoutique();
+
+        if ($boutique) {
+            if ($boutique->isStatus()) {
+                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $limgB = [];
+
+                foreach ($lBo  as $bo) {
+                    $limgB[]
+                        = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+                }
+                if (empty($limgB)) {
+                    $limgB[]
+                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                }
+                $boutiqueU =  [
+                    'codeBoutique' => $boutique->getCodeBoutique(),
+                    'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                    'description' => $boutique->getDescription() ?? "Aucune",
+                    'titre' => $boutique->getTitre() ?? "Aucun",
+                    'status' => $boutique->isStatus(),
+                    'note' => $this->myFunction->noteBoutique($boutique->getId()),
+
+                    'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                    'images' => $limgB,
+                    'localisation' =>  $boutique->getLocalisation() ? [
+                        'ville' =>
+                        $boutique->getLocalisation()->getVille(),
+
+                        'longitude' =>
+                        $boutique->getLocalisation()->getLongitude(),
+                        'latitude' =>
+                        $boutique->getLocalisation()->getLatitude(),
+                    ] : [
+                        'ville' =>
+                        'incertiane',
+
+                        'longitude' =>
+                        0.0,
+                        'latitude' =>
+                        0.0,
+                    ]
+                ];
+            }
+        }
+        $shortF =  [
+
+            'id' => $short->getId(),
+            'titre' => $short->getTitre() ?? "Aucun",
+            'description' => $short->getDescription() ?? "Aucun",
+            'status' => $short->isStatus(),
+            'Preview' =>  $short->getPreview(),
+            'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+            'src' =>  $short->getSrc(),
+            'codeShort' =>
+            $short->getCodeShort(),    'nbre_like' => count($this->ListLikeShort($short)),
+            'nbre_commentaire' => count($this->ListCommentShort($short)),
+            'date' =>
+            date_format($short->getDateCreated(), 'Y-m-d H:i'),
+            'boutique' =>  $boutiqueU
+
+        ];
+
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $shortF,
                 ],
                 200
             );
@@ -216,6 +317,15 @@ class ShortController extends AbstractController
 
                 $existLikeShort->setLike_short(!$existLikeShort->isLike_short());
                 $this->em->persist($existLikeShort);
+                $data = [
+                    'title' => 'Je like un Short',
+                    'description' => 'Je like un Short',
+                    'user' => $user,
+                    'sujet' =>  $existLikeShort,
+                ];
+                $notification =   $this->myFunction->createNotification(2, $data);
+                $notificationEmit =   $this->myFunction->modelNotification($notification);
+                $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
             } else {
                 $likeShort = new ShortLike();
 
@@ -223,6 +333,15 @@ class ShortController extends AbstractController
                 $likeShort->setClient($user);
                 // $likeShort->setLike_short(1);
                 $this->em->persist($likeShort);
+                $data = [
+                    'title' => 'Je like un Short',
+                    'description' => 'Je like un Short',
+                    'user' => $user,
+                    'sujet' =>  $likeShort,
+                ];
+                $notification =   $this->myFunction->createNotification(2, $data);
+                $notificationEmit =   $this->myFunction->modelNotification($notification);
+                $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
             }
 
 
@@ -242,69 +361,69 @@ class ShortController extends AbstractController
 
 
 
-            if ($boutique->isStatus()) {
-                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                $limgB = [];
+            if (!$boutique->isStatus()) {
+                return new JsonResponse([
+                    'message' => 'Like ajoute.',
+                    'short' =>  []
 
-                foreach ($lBo  as $bo) {
-                    $limgB[]
-                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
-                }
-                if (empty($limgB)) {
-                    $limgB[]
-                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
-                }
-                $boutiqueU =  [
-                    'codeBoutique' => $boutique->getCodeBoutique(),
-                    'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                    'description' => $boutique->getDescription() ?? "Aucune",
-                    'titre' => $boutique->getTitre() ?? "Aucun",
-                    'status' => $boutique->isStatus(),
-                    'note' => $this->myFunction->noteBoutique($boutique->getId()),
-
-                    'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                    'images' => $limgB,
-                    'localisation' =>  $boutique->getLocalisation() ? [
-                        'ville' =>
-                        $boutique->getLocalisation()->getVille(),
-
-                        'longitude' =>
-                        $boutique->getLocalisation()->getLongitude(),
-                        'latitude' =>
-                        $boutique->getLocalisation()->getLatitude(),
-                    ] : [
-                        'ville' =>
-                        'incertiane',
-
-                        'longitude' =>
-                        0.0,
-                        'latitude' =>
-                        0.0,
-                    ]
-                ];
+                ], 203);
             }
 
+            $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+            $limgB = [];
 
+            foreach ($lBo as $bo) {
+                $limgB[]
+                    = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+            }
+            if (empty($limgB)) {
+                $limgB[]
+                    = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+            }
+            $boutiqueU = [
+                'codeBoutique' => $boutique->getCodeBoutique(),
+                'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                'description' => $boutique->getDescription() ?? "Aucune",
+                'titre' => $boutique->getTitre() ?? "Aucun",
+                'status' => $boutique->isStatus(),
+                'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
+                'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                'images' => $limgB,
+                'localisation' => $boutique->getLocalisation() ? [
+                    'ville' =>
+                    $boutique->getLocalisation()->getVille(),
 
-            $shortF =  [
+                    'longitude' =>
+                    $boutique->getLocalisation()->getLongitude(),
+                    'latitude' =>
+                    $boutique->getLocalisation()->getLatitude(),
+                ] : [
+                    'ville' =>
+                    'incertiane',
+
+                    'longitude' =>
+                    0.0,
+                    'latitude' =>
+                    0.0,
+                ]
+            ];
+
+            $shortF = [
 
                 'id' => $short->getId(),
                 'titre' => $short->getTitre() ?? "Aucun",
                 'description' => $short->getDescription() ?? "Aucun",
                 'status' => $short->isStatus(),
-                'Preview' =>  $short->getPreview(),
-                'src' =>  $short->getSrc(),
-                'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                'Preview' => $short->getPreview(),
+                'src' => $short->getSrc(),
+                'is_like' => $user == null ? false : $this->myFunction->userlikeShort($short, $user),
                 'nbre_like' => count($this->ListLikeShort($short)),
-                'nbre_commentaire' => count($this->ListCommentShort($short)),
+                'codeShort' =>
+                $short->getCodeShort(),     'nbre_commentaire' => count($this->ListCommentShort($short)),
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                'boutique' =>  $boutiqueU
-
-
-
-
+                'boutique' => $boutiqueU
             ];
 
             return new JsonResponse([
@@ -380,7 +499,7 @@ class ShortController extends AbstractController
             date_format($comment->getDateCreated(), 'Y-m-d H:i'),
             'commentaire' => $comment->getComment() ?? "Aucun",
             'username' => $comment->getClient()->getNom() . ' ' . $comment->getClient()->getPreNom() ?? "Aucun",
-            'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+            'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
             'nbre_com' => count($this->ListCommentComment($comment)),
             'sub_responses' => false,
             'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comment)),
@@ -388,6 +507,17 @@ class ShortController extends AbstractController
 
 
         ];
+        $data = [
+            'title' => 'Je commente un Short',
+            'description' => 'Je commente un Short',
+            'user' => $user,
+            'sujet' =>  $comment,
+        ];
+        $notification =   $this->myFunction->createNotification(3, $data);
+        $notificationEmit =   $this->myFunction->modelNotification($notification);
+
+
+        $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
         return new JsonResponse([
             'message' => 'Commentaire ajoute.',
             'commentaire' =>  $commentaire
@@ -430,13 +560,30 @@ class ShortController extends AbstractController
 
                 $existLikeShortCom->setLike_comment(!$existLikeShortCom->isLike_comment());
                 $this->em->persist($existLikeShortCom);
+                $data = [
+                    'title' => 'Je commente un Short',
+                    'description' => 'Je commente un Short',
+                    'user' => $user,
+                    'sujet' =>  $existLikeShortCom,
+                ];
+                $notification =   $this->myFunction->createNotification(4, $data);
+                $notificationEmit =   $this->myFunction->modelNotification($notification);
+                $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
             } else {
                 $likeShortCom = new ShortCommentLike();
 
                 $likeShortCom->setShortComment($com);
                 $likeShortCom->setClient($user);
-                // $likeShortCom->setLike_short(1);
                 $this->em->persist($likeShortCom);
+                $data = [
+                    'title' => 'Je commente un Short',
+                    'description' => 'Je commente un Short',
+                    'user' => $user,
+                    'sujet' =>  $likeShortCom,
+                ];
+                $notification =   $this->myFunction->createNotification(4, $data);
+                $notificationEmit =   $this->myFunction->modelNotification($notification);
+                $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
             }
 
 
@@ -457,7 +604,7 @@ class ShortController extends AbstractController
 
                 'commentaire' => $com->getComment() ?? "Aucun",
                 'username' => $com->getClient()->getNom() . ' ' . $com->getClient()->getPreNom() ?? "Aucun",
-                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
                 'nbre_com' => count($this->ListCommentComment($com)),
                 'sub_responses' => false,
                 'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($com)),
@@ -542,7 +689,7 @@ class ShortController extends AbstractController
                 'date' =>
                 date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
-                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'userphoto' =>   $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
                 'nbre_com' => count($this->ListCommentComment($comm)),
                 'sub_responses' => false,
                 'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
@@ -557,8 +704,6 @@ class ShortController extends AbstractController
                 [
                     'data'
                     => array_reverse($listCommentaires),
-
-
                 ],
                 200
             );
@@ -603,7 +748,7 @@ class ShortController extends AbstractController
                 'date' =>
                 date_format($Commmentaire->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
-                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
                 'nbre_com' =>  0, //count($this->ListCommentComment($comm)),
                 'sub_responses' => false,
                 'target_user' => '',
@@ -624,8 +769,6 @@ class ShortController extends AbstractController
                 [
                     'data'
                     => /* array_reverse */ ($listCommentaires),
-
-
                 ],
                 200
             );
@@ -650,7 +793,7 @@ class ShortController extends AbstractController
                 'date' =>
                 date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom(),
-                'userphoto' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/users/' . $profile,
+                'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
                 'nbre_com' => /* count($this->ListCommentComment($comm)) */ 0,
                 'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
                 'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
@@ -681,8 +824,6 @@ class ShortController extends AbstractController
                 [
                     'data'
                     => '',
-
-
                 ],
                 200
             );
@@ -714,11 +855,11 @@ class ShortController extends AbstractController
 
 
         $lShortF = [];
-        
+
 
         // $keySecret = $data['keySecret'];
         $codeBoutique =
-        $request->get('codeBoutique') ;
+            $request->get('codeBoutique');
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
 
         $lShort = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
@@ -733,7 +874,8 @@ class ShortController extends AbstractController
                 'description' => $short->getDescription() ?? "Aucun",
                 'status' => $short->isStatus(),
                 'Preview' =>  $short->getPreview(),
-
+                'codeShort' =>
+                $short->getCodeShort(),
                 'src' =>  $short->getSrc(),
                 'nbre_like' => count($this->ListLikeShort($short)),
                 'nbre_commentaire' => count($this->ListCommentShort($short)),
@@ -752,8 +894,6 @@ class ShortController extends AbstractController
                 [
                     'data'
                     =>  $lShortF,
-
-
                 ],
                 200
             );
@@ -818,58 +958,69 @@ class ShortController extends AbstractController
 
         // dd($file);
 
-        if ($file &&   $boutique) {
-            $nameFile                 = $this->myFunction->getUniqueNameShort();
-            $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-            // this is needed to safely include the file name as part of the URL
-            $safeFilenameData = $slugger->slug($originalFilenameData);
-            $newFilenameData =
-                $nameFile . '.' . $file->guessExtension();
+        if (!$file ||   !$boutique) {
 
-            // Move the file to the directory where brochures are stored
-            try {
-
-                $file->move(
-                    $this->getParameter('shorts_object'),
-                    $newFilenameData
-                );
-                $this->extractImageFromVideoAction(
-                    $this->getParameter('shorts_object') . '/' .
-                        $newFilenameData,
-
-                    $this->getParameter('shorts_object') . '/' .    $nameFile . '.jpg'
-
-
-                );
-                $short = new Short();
-                $short->setSrc($newFilenameData);
-                $short->setPreview($nameFile . '.jpg');
-                $short->setTitre($titre);
-                $short->setDescription(
-                    $description
-                );
-                $short->setBoutique($boutique);
-                $this->em->persist($short);
-                $this->em->flush();
-
-                return
-                    new JsonResponse(
-                        [
-                            'message'
-                            =>  'success'
-                        ],
-                        200
-                    );
-            } catch (FileException $e) {
-                return
-                    new JsonResponse([
-
-                        'status' =>   false,
-                        'message' =>   'Vos fichiers ne sont pas valides'
-
-                    ], 203);
-            }
+            return new JsonResponse(
+                [
+                    'message' => 'Verifier votre requette',
+                    // 'data'=> $data
+                ],
+                400
+            );
         }
+
+        $nameFile
+            = $this->myFunction->getUniqueNameShort();
+        $codeShort                 = $nameFile;
+        $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        // this is needed to safely include the file name as part of the URL
+        $safeFilenameData = $slugger->slug($originalFilenameData);
+        $newFilenameData =
+            $nameFile . '.' . $file->guessExtension();
+
+        // Move the file to the directory where brochures are stored
+        try {
+
+            $file->move(
+                $this->getParameter('shorts_object'),
+                $newFilenameData
+            );
+            $this->extractImageFromVideoAction(
+                $this->getParameter('shorts_object') . '/' .
+                    $newFilenameData,
+
+                $this->getParameter('shorts_object') . '/' .    $nameFile . '.jpg'
+            );
+            $short = new Short();
+            $short->setSrc($newFilenameData);
+            $short->setPreview($nameFile . '.jpg');
+            $short->setTitre($titre);
+            $short->setCodeShort($codeShort);
+            $short->setDescription(
+                $description
+            );
+            $short->setBoutique($boutique);
+            $this->em->persist($short);
+            $this->em->flush();
+
+            return
+                new JsonResponse(
+                    [
+                        'message'
+                        =>  'success'
+                    ],
+                    200
+                );
+        } catch (FileException $e) {
+            return
+                new JsonResponse([
+
+                    'status' =>   false,
+                    'message' =>   'Vos fichiers ne sont pas valides'
+
+                ], 203);
+        }
+
         // } catch (\Exception $e) {
         //     // Une erreur s'est shorte, annulez la transaction
 

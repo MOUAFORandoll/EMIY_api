@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ShortCommentLikeRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ShortCommentLikeRepository::class)]
@@ -24,10 +26,14 @@ class ShortCommentLike
     #[ORM\ManyToOne(inversedBy: 'shortCommentLikes')]
     private ?ShortComment $shortComment = null;
 
+    #[ORM\OneToMany(mappedBy: 'shortCommentLike', targetEntity: Notification::class)]
+    private Collection $notifications;
+
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
         $this->like_comment = true;
+        $this->notifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -79,6 +85,36 @@ class ShortCommentLike
     public function setShortComment(?ShortComment $shortComment): static
     {
         $this->shortComment = $shortComment;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setShortCommentLike($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            // set the owning side to null (unless already changed)
+            if ($notification->getShortCommentLike() === $this) {
+                $notification->setShortCommentLike(null);
+            }
+        }
 
         return $this;
     }

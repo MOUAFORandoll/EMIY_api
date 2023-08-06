@@ -251,12 +251,12 @@ class PointLivraisonController extends AbstractController
 
             $list_point_livraison[]
                 = [
-                'id' => $point_livraison->getId(),
-                'libelle' => $point_livraison->getLibelle(),
+                    'id' => $point_livraison->getId(),
+                    'libelle' => $point_livraison->getLibelle(),
                     'ville' => $point_livraison->getVille(),
                     'quartier' => $point_livraison->getQuartier(),
-                    'image' =>    /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */
-                    'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/point_livraison_object/' . $point_livraison->getImage()
+                    'image' =>   
+                    $this->myFunction::BACK_END_URL . '/images/point_livraison_object/' . $point_livraison->getImage()
                 ];
         }
 
@@ -314,7 +314,4 @@ class PointLivraisonController extends AbstractController
             ], 200);
         }
     }
-
-
-
 }

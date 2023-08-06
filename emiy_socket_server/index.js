@@ -21,7 +21,7 @@ app.get('/c2', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    console.log('A new client has connected');
+    console.log('A new client has connected',);
 
     // Event handler for receiving chat messages from clients
     socket.on('chat', (data) => {
@@ -64,6 +64,12 @@ io.on('connection', (socket) => {
         } else {
             console.log(`  client message existe dje: ${data}`);
         }
+    });
+
+    // Event handler for receiving notifications messages from clients
+    socket.on('notifications', (data) => {
+        console.log(`notifications message received: ${data}`);
+        io.emit('notifications', data);
     });
 
     // Event handler for disconnections

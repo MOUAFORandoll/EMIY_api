@@ -26,7 +26,6 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\Entity\UserPlateform;
 use App\FunctionU\MyFunction;
 use Symfony\Component\String\Slugger\SluggerInterface;
-use Knp\Component\Pager\Pagination\PaginationInterface;
 use Knp\Component\Pager\PaginatorInterface;
 
 
@@ -232,26 +231,7 @@ class ProduitController extends AbstractController
         }
     }
 
-    /**
-     * @Route("/AS", name="s", methods={"GET"})
-     * @param Request $request
-     * @return JsonResponse
-     * @throws ClientExceptionInterface
-     * @throws DecodingExceptionInterface
-     * @throws RedirectionExceptionInterface
-     * @throws ServerExceptionInterface
-     * @throws TransportExceptionInterface
-     * @throws \Exception
-     * 
-     * 
-     */
-    public function S()
-    {
-        return
-
-            $_SERVER;
-    }
-
+    
     /**
      * @Route("/produit/read/all", name="produitReadAll", methods={"GET"})
      * @param Request $request
@@ -284,7 +264,7 @@ class ProduitController extends AbstractController
                 $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                 foreach ($lProduitO  as $produit0) {
                     $lsImgP[]
-                        = ['id' => $produit0->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                        = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                 }
 
 
@@ -350,12 +330,12 @@ class ProduitController extends AbstractController
      */
     public function produitReadclient(Request $request)
     {
-        $index =
+        $page =
             $request->get('page');
         $pagination = 10;
         $result = $this->em->getRepository(Produit::class)->findAll();
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
-        $lProduit = $this->paginator->paginate($result, $index, 12);
+        $lProduit = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
         $lP = [];
         if ($lProduit) {
             foreach ($lProduit as $produit) {
@@ -365,7 +345,7 @@ class ProduitController extends AbstractController
                     $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                     foreach ($lProduitO  as $produit0) {
                         $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                            = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                     }
 
 
@@ -421,12 +401,12 @@ class ProduitController extends AbstractController
      */
     public function produitReadPopular(Request $request,)
     {
-        $index =
+        $page =
             $request->get('page');
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $result = $this->em->getRepository(Produit::class)->findAll();
-        $lProduit = $this->paginator->paginate($result, $index, 12);
+        $lProduit = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
         $lP = [];
 
         foreach ($lProduit as $produit) {
@@ -437,7 +417,7 @@ class ProduitController extends AbstractController
                 $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                 foreach ($lProduitO as $produit0) {
                     $lsImgP[]
-                        = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                        = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                 }
 
 
@@ -473,7 +453,7 @@ class ProduitController extends AbstractController
             //         $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
             //         foreach ($lProduitO  as $produit0) {
             //             $lsImgP[]
-            //                 = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+            //                 = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
             //         }
 
 
@@ -510,7 +490,7 @@ class ProduitController extends AbstractController
                 200
             );
     }
- 
+
     /**
      * @Route("/produit/read/boutique", name="produitReadBoutique", methods={"POST"})
      * @param Request $request

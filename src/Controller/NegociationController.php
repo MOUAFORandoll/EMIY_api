@@ -216,7 +216,7 @@ class NegociationController extends AbstractController
                     'codeNegociation' => $value->getCodeNegociation(),
                     'prixNegocie' => $value->getPrixNegocie(),
                     'titre_produit' =>  $value->getProduit()->getTitre(),
-                    'src_produit' =>/*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
+                    'src_produit' =>$this->myFunction::BACK_END_URL . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
                     'last_message' => ($lastElement)->getMessage(),
                     'date' =>  $value->getDateCreated()->format('H:i')
                 ];
@@ -246,7 +246,7 @@ class NegociationController extends AbstractController
                 'message' => $value->getMessage(),
                 'emetteurId' =>  $value->isEmetteur() == true ?     $negociationProduit->getInitiateur()->getId() :
                     $negociationProduit->getProduit()->getBoutique()->getUser()->getId(),
-           
+
                 'date' =>  $value->getDateEnvoi()->format('Y-m-d'),
                 'heure' =>  $value->getDateEnvoi()->format('H:i'),
             ];

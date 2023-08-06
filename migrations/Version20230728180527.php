@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20230723131719 extends AbstractMigration
+final class Version20230728180527 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -21,22 +21,21 @@ final class Version20230723131719 extends AbstractMigration
     {
         // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
-       
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
-        $this->addSql('ALTER TABLE short_comment ALTER date_created TYPE TIMESTAMP(0) WITHOUT TIME ZONE');
+        $this->addSql('ALTER TABLE short ADD code_short VARCHAR(255) DEFAULT NULL');
         $this->addSql('ALTER TABLE user_plateform ALTER key_secret TYPE TEXT');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE SCHEMA public');  
+        $this->addSql('CREATE SCHEMA public');
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
         $this->addSql('ALTER TABLE produit_object ALTER src TYPE TEXT');
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
         $this->addSql('ALTER TABLE commande ALTER token TYPE TEXT');
         $this->addSql('ALTER TABLE user_plateform ALTER key_secret TYPE TEXT');
         $this->addSql('ALTER TABLE user_plateform ALTER key_secret TYPE TEXT');
-        $this->addSql('ALTER TABLE short_comment ALTER date_created TYPE DATE');
+        $this->addSql('ALTER TABLE short DROP code_short');
     }
 }

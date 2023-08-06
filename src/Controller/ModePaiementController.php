@@ -79,7 +79,7 @@ class ModePaiementController extends AbstractController
 
 
             $img
-                =   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] .
+                =  $this->myFunction::BACK_END_URL .
                 ($mode->getId() == 1 ? '/images/payement/om.png'
                     : ($mode->getId() == 2 ?
                         '/images/payement/momo.png'

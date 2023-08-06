@@ -295,7 +295,7 @@ class DashBoardController extends AbstractController
                                         $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                         foreach ($lProduitO  as $produit0) {
                                             $lsImgP[]
-                                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                         }
                                         $boutique = [
 
@@ -444,11 +444,11 @@ class DashBoardController extends AbstractController
 
                 foreach ($lBo  as $bo) {
                     $limgB[]
-                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                        = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                 }
                 if (empty($limgB)) {
                     $limgB[]
-                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                 }
 
                 if ($boutique->getUser()) {
@@ -572,11 +572,11 @@ class DashBoardController extends AbstractController
 
                 foreach ($lBo  as $bo) {
                     $limgB[]
-                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                        = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                 }
                 if (empty($limgB)) {
                     $limgB[]
-                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                 }
 
                 if ($boutique->getUser()) {
@@ -748,7 +748,7 @@ class DashBoardController extends AbstractController
 
                     foreach ($lProduitO  as $produit0) {
                         $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                            = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                     }
                     $listProduit[] = [
                         'id' => $produit->getId(),
@@ -1488,7 +1488,7 @@ class DashBoardController extends AbstractController
 
             $notificationU = [
                 'id' => $notification->getId(),
-                'user_create' => $notification->getUser()->getNom() . " " . $notification->getUser()->getNom(),
+                'user_create' => $notification->getInitiateur()->getNom() . " " . $notification->getInitiateur()->getNom(),
                 'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
 
                 'title' => $notification->getTitle(),
@@ -1586,7 +1586,7 @@ class DashBoardController extends AbstractController
         $notification = new Notification();
         $notification->setTitle($title);
         $notification->setDescription($description);
-        $notification->setUser($admin);
+        $notification->setInitiateur($admin);
         $this->em->persist($notification);
         $this->em->flush();
         return
@@ -1738,7 +1738,7 @@ class DashBoardController extends AbstractController
                     'codeNegociation' => $value->getCodeNegociation(),
                     'prixNegocie' => $value->getPrixNegocie(),
                     'titre_produit' =>  $value->getProduit()->getTitre(),
-                    'src_produit' =>/*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
+                    'src_produit' =>  $this->myFunction::BACK_END_URL . '/images/produits/' .  $value->getProduit()->getProduitObjects()[0]->getSrc(),
                     'last_message' => ($lastElement)->getMessage(),
                     'date' =>  $value->getDateCreated()->format('Y-m-d'),
                     'heure' =>  $value->getDateCreated()->format('H:i'),
@@ -1951,7 +1951,7 @@ class DashBoardController extends AbstractController
 
         $category->setLibelle($data['libelle'] ?? '');
         $category->setDescription($data['description'] ?? '');
-        $category->setLogo('http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png');
+        $category->setLogo($this->myFunction::BACK_END_URL . '/images/default/boutique.png');
 
         $this->em->persist($category);
         $this->em->flush();
@@ -2213,7 +2213,7 @@ class DashBoardController extends AbstractController
                     'id' => $cat->getId(),
                     'libelle' => $cat->getLibelle(),
                     'description' => $cat->getDescription(),
-                    'logo' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/category/' . $cat->getLogo(),
+                    'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $cat->getLogo(),
                     // 'titre' => $cat->getTitre(), 
                     'status' => $cat->isStatus(),
 
@@ -2312,11 +2312,11 @@ class DashBoardController extends AbstractController
 
                     foreach ($lBo  as $bo) {
                         $limgB[]
-                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                            = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                     }
                     if (empty($limgB)) {
                         $limgB[]
-                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                            = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     }
                     $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),

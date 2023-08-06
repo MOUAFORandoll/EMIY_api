@@ -751,7 +751,7 @@ class CommandeController extends AbstractController
                                     $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                     foreach ($lProduitO  as $produit0) {
                                         $lsImgP[]
-                                            = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                            = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                     }
 
                                     $produit =  [
@@ -861,7 +861,7 @@ class CommandeController extends AbstractController
                                         $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                         foreach ($lProduitO  as $produit0) {
                                             $lsImgP[]
-                                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                         }
 
                                         $produit =  [
@@ -985,7 +985,7 @@ class CommandeController extends AbstractController
                                         $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                         foreach ($lProduitO  as $produit0) {
                                             $lsImgP[]
-                                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                         }
                                         $boutique = [
 
@@ -1164,7 +1164,7 @@ class CommandeController extends AbstractController
                                             $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                             foreach ($lProduitO  as $produit0) {
                                                 $lsImgP[]
-                                                    = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                                    = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                             }
                                             $boutique = [
 
@@ -1332,7 +1332,7 @@ class CommandeController extends AbstractController
                                         $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                         foreach ($lProduitO  as $produit0) {
                                             $lsImgP[]
-                                                = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                         }
                                         $boutique = [
 
@@ -1731,7 +1731,7 @@ class CommandeController extends AbstractController
                                 $lProduitO =   $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                                 foreach ($lProduitO  as $produit0) {
                                     $lsImgP[]
-                                        = ['id' => $produit0->getId(), 'src' =>  /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                                        = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                                 }
                                 $boutique = [
 

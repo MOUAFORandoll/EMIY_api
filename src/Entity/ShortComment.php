@@ -38,6 +38,9 @@ class ShortComment
     #[ORM\OneToMany(mappedBy: 'reference_commentaire', targetEntity: self::class)]
     private Collection $shortComments;
 
+    #[ORM\OneToMany(mappedBy: 'shortCommentaire', targetEntity: Notification::class)]
+    private Collection $notifications;
+
 
     public function __construct()
     {
@@ -46,6 +49,7 @@ class ShortComment
 
         $this->shortCommentLikes = new ArrayCollection();
         $this->shortComments = new ArrayCollection();
+        $this->notifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -168,6 +172,36 @@ class ShortComment
             // set the owning side to null (unless already changed)
             if ($shortComment->getReferenceCommentaire() === $this) {
                 $shortComment->setReferenceCommentaire(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setShortCommentaire($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            // set the owning side to null (unless already changed)
+            if ($notification->getShortCommentaire() === $this) {
+                $notification->setShortCommentaire(null);
             }
         }
 

@@ -15,6 +15,7 @@ use App\Entity\Localisation;
 use App\Entity\NegociationProduit;
 use App\Entity\NotationBoutique;
 use App\Entity\LikeProduit;
+use App\Entity\Notification;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\Short;
@@ -22,6 +23,7 @@ use App\Entity\ShortComment;
 use App\Entity\ShortCommentLike;
 use App\Entity\ShortLike;
 use App\Entity\Transaction;
+use App\Entity\TypeNotification;
 use App\Entity\UserPlateform;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
@@ -46,6 +48,12 @@ class MyFunction
     private $client;
     private
         $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+
+    const
+        BACK_END_URL =
+        'http://192.168.137.17:8000';
+    const
+        PAGINATION = 15;
     public function __construct(
         EntityManagerInterface $em,
         HttpClientInterface $client,
@@ -54,7 +62,7 @@ class MyFunction
     ) {
 
         $this->host_serveur_socket
-            =/*  $_SERVER['REQUEST_SCHEME'] . ://.  $_SERVER['SERVER_ADDR'] */ 'http://192.168.137.250' . ':3000';
+            =/*  $_SERVER['REQUEST_SCHEME'] . ://.  $_SERVER['SERVER_ADDR'] */ 'http://127.0.0.1' . ':3000';
         $this->client =
             $client;
         $this->em = $em;
@@ -779,13 +787,252 @@ class MyFunction
     {
 
 
-        $code = 'cn';
+        $code = 'csn';
         $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $max = mb_strlen($listeCar, '8bit') - 1;
         for ($i = 0; $i < 18; ++$i) {
             $code .= $listeCar[random_int(0, $max)];
         }
+        $ExistCode = $this->em->getRepository(Short::class)->findOneBy(['codeShort' => $code]);
+        if ($ExistCode) {
+            return
+                $this->getUniqueNameProduit();
+        } else {
+            return $code;
+        }
+    }
 
-        return $code;
+
+
+
+
+
+    function   createNotification($idtype, $data)
+    {
+
+
+        $type =
+            $this->em->getRepository(TypeNotification::class)->findOneBy(['id' => $idtype]);
+
+
+        $notification = new Notification();
+        $notification->setTitle($data['title'] ?? '');
+        $notification->setDescription($data['description'] ?? '');
+        $notification->setInitiateur($data['user']);
+        $notification->setTypeNotification($type);
+        switch ($type->getId()) {
+
+                // notificaton general
+            case 1:
+                $this->em->persist($notification);
+                $this->em->flush();
+                return
+                    $notification;
+
+                // notificaton like short
+            case 2:
+                $notification->setShortLike($data['sujet']);
+                $notification->setRecepteur($data['sujet']->getShort()->getBoutique()->getUser());
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
+
+                // notificaton commentaire short
+            case 3:
+                $notification->setShortCommentaire($data['sujet']);
+                $data['sujet']->getReferenceCommentaire() == null ?
+                    $notification->setRecepteur($data['sujet']->getShort()->getBoutique()->getUser())
+                    :
+                    $notification->setRecepteur($data['sujet']->getReferenceCommentaire()->getClient());
+
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
+
+                // notificaton like  commentaire short
+
+            case 4:
+                $notification->setShortCommentLike($data['sujet']);
+
+                $data['sujet']->getShortComment()->getReferenceCommentaire() == null ?
+                    $notification->setRecepteur($data['sujet']->getShortComment()->getClient())
+                    :
+                    $notification->setRecepteur($data['sujet']->getShortComment()->getReferenceCommentaire()->getClient());
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
+                // notificaton mesage de negociation
+
+            case 5:
+                $notification->setMessageNegociation($data['sujet']);
+                $notification->setRecepteur($data['sujet']->getNegociation()->getInitiateur());
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
+
+                // notificaton mesage de communication avec service cleint
+            case 6:
+                $notification->setMessageCommunication($data['sujet']);
+                $notification->setRecepteur($data['sujet']->getCommunication()->getClient());
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
+
+
+            default:
+                # code...
+                break;
+        }
+    }
+
+    function
+    modelNotification(Notification $notification)
+    {
+
+
+        $profile      = count($notification->getInitiateur()->getUserObjects())  == 0 ? '' : $notification->getInitiateur()->getUserObjects()->first()->getSrc();
+
+
+
+        $type =  $notification->getTypeNotification()->getId();
+
+        switch ($type) {
+                //data de  general
+            case 1:
+                return [
+                    'id' => $notification->getId(),
+                    'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                    'read'  => $notification->isRead(),
+                    'title' => $notification->getTitle(),
+                    'description' => $notification->getDescription(),
+                    'type_notification' => 1,
+                    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+                ];
+                //data de  like short
+            case 2:
+                return
+                    $notification->getInitiateur()->getId() != $notification->getShortLike()->getShort()->getBoutique()->getUser()->getId() ?
+                    [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getShortLike()->getClient()->getNom(),
+                        'description' => 'A like votre short',
+                        'type_notification' => 2,
+                        'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+                        'short' => $notification->getShortLike()->getShort()->getId(),
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        // 'recepteur' => $notification->getShortLike()->getShort()->getBoutique()->getUser()->getKeySecret()
+
+                    ] : null;
+
+                //data de  commantaire short
+
+            case 3:
+                return
+                    $notification->getShortCommentaire()->getReferenceCommentaire() == null  ?   [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getShortCommentaire()->getClient()->getNom(),
+                        'description' =>  'A Commente votre short',
+                        'type_notification' => 3,    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+                        'short' => $notification->getShortCommentaire()->getShort()->getId(),
+
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        // 'recepteur' =>  $notification->getShortCommentaire()->getClient()->getId() != $notification->getShortCommentaire()->getShort()->getBoutique()->getUser()->getId() ?  $notification->getShortCommentaire()->getShort()->getBoutique()->getUser()->getKeySecret() : 0
+
+                    ] :   [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getShortCommentaire()->getClient()->getNom(),
+                        'description' =>  'A repondu a votre commentaire',
+                        'type_notification' => 3,    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        //   'recepteur' =>   $notification->getShortCommentaire()->getReferenceCommentaire()->getClient()->getKeySecret()
+
+                    ];
+                //data de like commantaire short
+            case 4:
+                return
+                    $notification->getShortCommentLike()->getShortComment()->getReferenceCommentaire() == null ?   [
+
+
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getShortCommentLike()->getClient()->getNom(),
+                        'description' => 'A like votre commentaire',
+                        'type_notification' => 4,
+                        'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+                        'short' => $notification->getShortCommentLike()->getShortComment()->getShort()->getId(),
+
+                        'recepteur' =>  $notification->getShortCommentLike()->getClient()->getId() !=  $notification->getShortCommentLike()->getShortComment()->getClient()->getId() ? $notification->getShortCommentLike()->getShortComment()->getClient()->getKeySecret() : 0
+
+                    ] : [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getShortCommentLike()->getClient()->getNom(),
+                        'description' => 'A like votre commentaire',
+                        'type_notification' => 4,    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+                        'short' => $this->getIdShort($notification->getShortCommentLike()->getShortComment()),
+
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        // 'recepteur' =>  $notification->getShortCommentLike()->getShortComment()->getReferenceCommentaire()->getClient()->getKeySecret()
+
+                    ];
+                // data de message negociation
+            case 5:
+                return ($notification->getMessageNegociation()->getInitiateur()->getId() != $notification->getMessageNegociation()->getNegociation()->getInitiateur()->getId()) ?
+                    [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read' => $notification->isRead(),
+                        'title' => $notification->getMessageNegociation()->getInitiateur()->getNom(),
+                        'description' => $notification->getMessageNegociation()->getMessage(),
+                        'type_notification' => 5,    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        // 'recepteur' =>  $notification->getMessageNegociation()->getNegociation()->getInitiateur()->getKeySecret(),
+
+                    ] : null;
+                // data de message communication
+
+            case 6:
+                return ($notification->getMessageCommunication()->getInitiateur()->getId() != $notification->getMessageCommunication()->getCommunication()->getClient()->getId()) ?
+                    [
+                        'id' => $notification->getId(),
+                        'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                        'read'   => $notification->isRead(),
+                        'title' => $notification->getMessageCommunication()->getInitiateur()->getNom(),
+                        'description' => $notification->getMessageCommunication()->getMessage(),
+                        'type_notification' => 6,    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+
+                        'recepteur' => $notification->getInitiateur()->getKeySecret() != $notification->getRecepteur()->getKeySecret() ? $notification->getRecepteur()->getKeySecret() : 0
+                        //  'recepteur' =>  $notification->getMessageCommunication()->getCommunication()->getClient()->getKeySecret(),
+
+                    ] : null;
+
+            default:
+                # code...
+                break;
+        }
+    }
+
+    function  getIdShort(ShortComment  $comment)
+    {
+        if ($comment->getReferenceCommentaire() == null) {
+            return    $comment->getShort()->getId();
+        } else {
+            return    $this->getIdShort($comment->getReferenceCommentaire());
+        }
     }
 }

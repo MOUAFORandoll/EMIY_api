@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ShortLikeRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ShortLikeRepository::class)]
@@ -26,10 +28,14 @@ class ShortLike
     #[ORM\ManyToOne(inversedBy: 'shortLikes')]
     private ?UserPlateform $client = null;
 
+    #[ORM\OneToMany(mappedBy: 'shortLike', targetEntity: Notification::class)]
+    private Collection $notifications;
+
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
         $this->like_short = true;
+        $this->notifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -81,6 +87,36 @@ class ShortLike
     public function setClient(?UserPlateform $client): static
     {
         $this->client = $client;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Notification>
+     */
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
+
+    public function addNotification(Notification $notification): static
+    {
+        if (!$this->notifications->contains($notification)) {
+            $this->notifications->add($notification);
+            $notification->setShortLike($this);
+        }
+
+        return $this;
+    }
+
+    public function removeNotification(Notification $notification): static
+    {
+        if ($this->notifications->removeElement($notification)) {
+            // set the owning side to null (unless already changed)
+            if ($notification->getShortLike() === $this) {
+                $notification->setShortLike(null);
+            }
+        }
 
         return $this;
     }

@@ -6,6 +6,7 @@ use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Category;
 use App\Entity\Localisation;
+use App\Entity\Notification;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
 use App\Entity\UserPlateform;
@@ -28,27 +29,33 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\FunctionU\MyFunction;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Knp\Component\Pager\PaginatorInterface;
 
-class ActionController extends AbstractController
+class GeneralController extends AbstractController
 {
 
     private $em;
     private   $serializer;
     private $clientWeb;
+    private $paginator;
+
     private $myFunction;
     public function __construct(
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         HttpClientInterface $clientWeb,
         MyFunction
-        $myFunction
+        $myFunction,
+
+        PaginatorInterface $paginator
 
     ) {
-         $this->em = $em;
+        $this->em = $em;
         $this->serializer = $serializer;
         $this->myFunction = $myFunction;
 
         $this->clientWeb = $clientWeb;
+        $this->paginator = $paginator;
     }
 
     /**
@@ -112,7 +119,7 @@ class ActionController extends AbstractController
                     $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                     foreach ($lProduitO  as $produit0) {
                         $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                            = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                     }
 
 
@@ -167,11 +174,11 @@ class ActionController extends AbstractController
 
                         foreach ($lBo  as $bo) {
                             $limgB[]
-                                = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                         }
                         if (empty($limgB)) {
                             $limgB[]
-                                = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                         }
                         $boutiqueU =  [
                             'codeBoutique' => $boutique->getCodeBoutique(),
@@ -253,5 +260,134 @@ class ActionController extends AbstractController
 
 
 
- 
+
+
+
+
+
+
+
+    ///// Ici on gere le cote notification du systeme d'un utilisateur
+
+
+
+
+    /**
+     * @Route("/notifications", name="UserNotification", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la cle secrete de l'admin
+     * 
+     * 
+     */
+    public function UserNotification(Request $request)
+    {
+
+
+
+        if (empty($request->get('keySecret'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+        if (!$user) {
+
+
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Action impossible'
+            ], 203);
+        }
+
+        $list_notifications_final  = [];
+
+
+        $result = $this->em->getRepository(Notification::class)->findBy(['recepteur' => $user]);
+        $page =
+            $request->get('page') ?? 1;
+       
+
+
+        $lNotification = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
+        foreach ($lNotification as $notification) {
+
+
+            $notificationU =
+
+                $this->myFunction->modelNotification($notification);
+
+            if ($notificationU != null) {
+
+
+                $list_notifications_final[] = $notificationU;
+            }
+        }
+
+        $datas
+            = $this->serializer->serialize(array_reverse($list_notifications_final), 'json');
+        return
+            new JsonResponse([
+                'data'
+                =>
+                JSON_DECODE($datas),
+
+            ], 200);
+    }
+
+
+
+    /**
+     * @Route("/notifications/read", name="UserReadNotification", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la cle secrete de l'admin
+     * 
+     * 
+     */
+    public function UserReadNotification(Request $request)
+    {
+
+
+
+        if (empty($request->get('id'))) {
+
+            return new JsonResponse([
+                'message' => 'Mauvais parametre de requete veuillez preciser votre keySecret '
+            ], 400);
+        }
+
+
+
+        $notification = $this->em->getRepository(Notification::class)->findOneBy(['id' => $request->get('id')]);
+        $notification->setRead(true);
+        $this->em->persist($notification);
+        $this->em->flush();
+        return
+            new JsonResponse([
+                'message'
+                =>
+                'Success',
+
+            ], 200);
+    }
 }

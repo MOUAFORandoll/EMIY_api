@@ -45,6 +45,9 @@ class Short
     #[ORM\OneToMany(mappedBy: 'short', targetEntity: ShortComment::class)]
     private Collection $shortComments;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $codeShort = null;
+
 
     public function getId(): ?int
     {
@@ -194,6 +197,18 @@ class Short
                 $shortComment->setShort(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getCodeShort(): ?string
+    {
+        return $this->codeShort;
+    }
+
+    public function setCodeShort(?string $codeShort): static
+    {
+        $this->codeShort = $codeShort;
 
         return $this;
     }

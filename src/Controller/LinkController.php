@@ -107,7 +107,7 @@ class LinkController extends AbstractController
         $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
         foreach ($lProduitO as $produit0) {
             $lsImgP[]
-                = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
         }
 
 
@@ -200,11 +200,11 @@ class LinkController extends AbstractController
 
         foreach ($lBo  as $bo) {
             $limgB[]
-                = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
         }
         if (empty($limgB)) {
             $limgB[]
-                = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
         }
         $listProduit = [];
         foreach ($boutique->getProduits()  as $produit) {
@@ -214,7 +214,7 @@ class LinkController extends AbstractController
 
                 foreach ($lProduitO  as $produit0) {
                     $lsImgP[]
-                        = ['id' => $produit0->getId(), 'src' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                        = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                 }
                 $listProduit[] = [
                     'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),

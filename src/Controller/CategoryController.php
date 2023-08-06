@@ -100,7 +100,7 @@ class CategoryController extends AbstractController
                     $categoryU =  [
                         'id' => $category->getId(),
                         'libelle' => $category->getLibelle(),
-                        'logo' => 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/category/' . $category->getLogo(),
+                        'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
                         'description' => $category->getDescription(),
                         // 'titre' => $category->getTitre(), 
                         'status' => $category->isStatus(),
@@ -149,7 +149,7 @@ class CategoryController extends AbstractController
     public function categoryReadBoutiqueClient(Request $request)
     {
 
-     
+
 
         if (empty($request->get('id'))) {
 
@@ -174,11 +174,11 @@ class CategoryController extends AbstractController
 
                     foreach ($lBo  as $bo) {
                         $limgB[]
-                            = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                            = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                     }
                     if (empty($limgB)) {
                         $limgB[]
-                            = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                            = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     }
                     $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),

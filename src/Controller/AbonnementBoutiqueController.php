@@ -69,50 +69,49 @@ class AbonnementBoutiqueController extends AbstractController
      */
     public function abonnementAdd(Request $request,)
     {
-         
-            $data
-                =        $data = $request->toArray();
+
+        $data
+            =        $data = $request->toArray();
 
 
-            if (empty($data['codeBoutique'])   || empty($data['keySecret'])) {
-                return new JsonResponse([
-                    'message' => 'Veuillez recharger la page et reessayer   ',
-
-                ], 400);
-            }
-
-            $codeBoutique = $data['codeBoutique'];
-
-            $keySecret = $data['keySecret'];
-
-            $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
-            $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
-            if (!$user || !$boutique) {
-                return new JsonResponse([
-                    'message' => 'Compte introuvable'
-
-                ], 203);
-            }
-            $abonnementExist = $this->em->getRepository(AbonnementBoutique::class)->findOneBy(['boutique' => $boutique]);
-            if ($abonnementExist) {
-
-                $abonnementExist->setStatus(!$abonnementExist->isStatus());
-                $this->em->persist($abonnementExist);
-            } else {
-                $abonnement = new AbonnementBoutique();
-
-                $abonnement->setClient($user);
-                $abonnement->setBoutique($boutique);
-                $this->em->persist($abonnement);
-            }
-            $this->em->flush();
+        if (empty($data['codeBoutique'])   || empty($data['keySecret'])) {
             return new JsonResponse([
-                'message' => 'Success',
-                'status' => true,
-                'id' =>  $boutique->getId()
+                'message' => 'Veuillez recharger la page et reessayer   ',
 
-            ], 200);
-        
+            ], 400);
+        }
+
+        $codeBoutique = $data['codeBoutique'];
+
+        $keySecret = $data['keySecret'];
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $keySecret]);
+        $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
+        if (!$user || !$boutique) {
+            return new JsonResponse([
+                'message' => 'Compte introuvable'
+
+            ], 203);
+        }
+        $abonnementExist = $this->em->getRepository(AbonnementBoutique::class)->findOneBy(['boutique' => $boutique]);
+        if ($abonnementExist) {
+
+            $abonnementExist->setStatus(!$abonnementExist->isStatus());
+            $this->em->persist($abonnementExist);
+        } else {
+            $abonnement = new AbonnementBoutique();
+
+            $abonnement->setClient($user);
+            $abonnement->setBoutique($boutique);
+            $this->em->persist($abonnement);
+        }
+        $this->em->flush();
+        return new JsonResponse([
+            'message' => 'Success',
+            'status' => true,
+            'id' =>  $boutique->getId()
+
+        ], 200);
     }
 
     /**
@@ -158,7 +157,7 @@ class AbonnementBoutiqueController extends AbstractController
 
             ], 203);
         }
-        $lAbonnementCollections = $this->paginator->paginate($abonnement, $page, 12);
+        $lAbonnementCollections = $this->paginator->paginate($abonnement, $page, $this->myFunction::PAGINATION);
         $lAbonnement = [];
         foreach ($lAbonnementCollections as $abonnement) {
 
@@ -170,11 +169,11 @@ class AbonnementBoutiqueController extends AbstractController
 
                 foreach ($lBo  as $bo) {
                     $limgB[]
-                        = ['id' => $bo->getId(), 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/boutiques/' . $bo->getSrc()];
+                        = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                 }
                 if (empty($limgB)) {
                     $limgB[]
-                        = ['id' => 0, 'src' =>   /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/default/boutique.png'];
+                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                 }
 
                 if ($boutique->getUser()) {
@@ -247,7 +246,7 @@ class AbonnementBoutiqueController extends AbstractController
             ], 203);
         }
         $abonnement = $this->em->getRepository(AbonnementBoutique::class)->findBy(['boutique' => $boutique]);
-        $lAbonnementCollections = $this->paginator->paginate($abonnement, $page, 12);
+        $lAbonnementCollections = $this->paginator->paginate($abonnement, $page, $this->myFunction::PAGINATION);
         $l_Abonnes = [];
         foreach ($lAbonnementCollections as $abonnement) {
 
@@ -293,7 +292,7 @@ class AbonnementBoutiqueController extends AbstractController
      */
     public function AbonnementProduitRead(Request $request,)
     {
-        $index =
+        $page =
             $request->get('page') ?? 1;
         $client = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
@@ -306,7 +305,7 @@ class AbonnementBoutiqueController extends AbstractController
             $produits = $boutique->getProduits();
             $limit = 50 /   $nomnre;
 
-            $lProduit = $this->paginator->paginate($produits, $index, $limit);
+            $lProduit = $this->paginator->paginate($produits, $page, $limit);
 
 
             foreach ($lProduit as $produit) {
@@ -317,7 +316,7 @@ class AbonnementBoutiqueController extends AbstractController
                     $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
                     foreach ($lProduitO as $produit0) {
                         $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' => /*  $_SERVER['SYMFONY_APPLICATION_DEFAULT_ROUTE_SCHEME'] */ 'http' . '://' . $_SERVER['HTTP_HOST'] . '/images/produits/' . $produit0->getSrc()];
+                            = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
                     }
                     $produitU = [
 
