@@ -692,7 +692,7 @@ class ShortController extends AbstractController
     public function CommentShortList(Request $request)
     {
 
-        $pagination = 10;
+
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $idShort =
@@ -748,7 +748,7 @@ class ShortController extends AbstractController
     public function CommentCommentShortList(Request $request)
     {
 
-        $pagination = 10;
+
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $idRef =

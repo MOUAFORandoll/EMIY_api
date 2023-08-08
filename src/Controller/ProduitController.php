@@ -231,7 +231,7 @@ class ProduitController extends AbstractController
         }
     }
 
-    
+
     /**
      * @Route("/produit/read/all", name="produitReadAll", methods={"GET"})
      * @param Request $request
@@ -332,7 +332,7 @@ class ProduitController extends AbstractController
     {
         $page =
             $request->get('page');
-        $pagination = 10;
+
         $result = $this->em->getRepository(Produit::class)->findAll();
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
         $lProduit = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);

@@ -284,7 +284,7 @@ class GeneralController extends AbstractController
      * @throws \Exception
      * 
      * 
-     * @param array $data doit contenir la cle secrete de l'admin
+     * ici on recupere les notifications de l'utilisateur
      * 
      * 
      */
@@ -317,7 +317,7 @@ class GeneralController extends AbstractController
         $result = $this->em->getRepository(Notification::class)->findBy(['recepteur' => $user]);
         $page =
             $request->get('page') ?? 1;
-       
+
 
 
         $lNotification = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
@@ -360,7 +360,7 @@ class GeneralController extends AbstractController
      * @throws \Exception
      * 
      * 
-     * @param array $data doit contenir la cle secrete de l'admin
+     * ici l'utilisateur lit la notification
      * 
      * 
      */
@@ -389,5 +389,213 @@ class GeneralController extends AbstractController
                 'Success',
 
             ], 200);
+    }
+
+
+    /**
+     * @Route("/home", name="HomeRead", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     */
+    public function HomeRead(Request $request)
+    {
+
+        $possible = false;
+        // $keySecret = $request->get('keySecret')
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+
+
+        $Produit = $this->getHomeProduct($user);
+        $Categorie = $this->getHomeCategory();
+        $Boutique = $this->getHomeBoutique($user);
+
+
+        return
+            new JsonResponse([
+                'Categorie'
+                =>
+                $Categorie, 'Produit'
+                =>
+                $Produit, 'Boutique'
+                =>
+                $Boutique,
+
+            ], 203);
+    }
+
+    /**
+     *  Ici  on recupere les produits populaires du home
+     * 
+     */
+    public function getHomeProduct($user)
+    {
+
+
+
+
+
+
+        $result = $this->em->getRepository(Produit::class)->findAll();
+        $lProduit = $this->paginator->paginate($result, 1, $this->myFunction::PAGINATION);
+        $data = [];
+
+        foreach ($lProduit  as $produit) {
+            $lsImgP = [];
+            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+            foreach ($lProduitO  as $produit0) {
+                $lsImgP[]
+                    = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
+            }
+
+
+
+            $produit =  [
+                'id' => $produit->getId(),
+                'like' => $this->myFunction->isLike_Produit($produit->getId()),
+                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
+
+                'codeProduit' => $produit->getCodeProduit(),
+                'boutique' => $produit->getBoutique()->getTitre(),
+                'description' => $produit->getDescription(),
+                'titre' => $produit->getTitre(),
+                'quantite' => $produit->getQuantite(),
+                'prix' => $produit->getPrixUnitaire(),
+                'status' => $produit->isStatus(),
+                'negociable' => $produit->isNegociable(),
+                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                'images' => $lsImgP
+
+            ];
+            array_push($data, $produit);
+        }
+        // $listProduits = $serializer->serialize($lP, 'json');
+
+        return
+            $data;
+    }
+
+
+
+
+    /**
+     *Ici  on recupere les categorie  du home
+     * 
+     * 
+     */
+    public function getHomeCategory()
+    {
+
+        $possible = false;
+
+
+
+
+        $result = $this->em->getRepository(Category::class)->findAll();
+        $lCategory = $this->paginator->paginate($result, 1, $this->myFunction::PAGINATION);
+
+
+        $data = [];
+        foreach ($lCategory as $category) {
+
+
+            $categoryU = [
+                'id' => $category->getId(),
+                'libelle' => $category->getLibelle(),
+                'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
+                'description' => $category->getDescription(),
+                // 'titre' => $category->getTitre(), 
+                'status' => $category->isStatus(),
+
+            ];
+            array_push($data, $categoryU);
+        }
+
+
+        return
+            $data;
+    }
+
+
+    /**
+     * 
+     * 
+     * Ici on recupere les boutiques populaire du systeme
+     * 
+     * 
+     */
+    public function getHomeBoutique($user)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+
+
+        $result    = $this->em->getRepository(Boutique::class)->findAll();
+        $lBoutique = $this->paginator->paginate($result, 1, $this->myFunction::PAGINATION);
+
+        $data = [];
+        foreach ($lBoutique as $boutique) {
+            if ($boutique->getUser()) {
+
+                $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $limgB = [];
+
+                foreach ($lBo as $bo) {
+                    $limgB[]
+                        = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+                }
+                if (empty($limgB)) {
+                    $limgB[]
+                        = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                }
+
+                if ($boutique->getUser()) {
+                    $boutiqueU = [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' => $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
+
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
+
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
+                        // 'produits' => $listProduit,
+
+
+                    ];
+                    array_push($data, $boutiqueU);
+                }
+            }
+        }
+
+        return
+            $data;
     }
 }
