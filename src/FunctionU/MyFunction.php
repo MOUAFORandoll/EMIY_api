@@ -53,7 +53,7 @@ class MyFunction
         BACK_END_URL =
         'http://172.20.10.10:8000';
     const
-        PAGINATION = 15;
+        PAGINATION = 14;
     public function __construct(
         EntityManagerInterface $em,
         HttpClientInterface $client,

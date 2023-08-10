@@ -445,7 +445,7 @@ class GeneralController extends AbstractController
 
 
         $result = $this->em->getRepository(Produit::class)->findAll();
-        $lProduit = $this->paginator->paginate($result, 1, $this->myFunction::PAGINATION);
+        $lProduit = $this->paginator->paginate($result, 1,  $this->myFunction::PAGINATION  );
         $data = [];
 
         foreach ($lProduit  as $produit) {

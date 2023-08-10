@@ -491,6 +491,91 @@ class ProduitController extends AbstractController
             );
     }
 
+    /** 
+     * @Route("/produit/from/category", name="produitReadForCategory", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function produitReadForCategory(Request $request)
+    {
+        $ListProduits = [];
+        $page =
+            $request->get('page') ?? 1;
+        $codeProduit =
+            $request->get('codeProduit');
+        if ($codeProduit) {
+
+
+            $produitA = $this->em->getRepository(Produit::class)->findOneBy(['codeProduit' => $codeProduit]);
+            $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+            $category = $produitA->getBoutique()->getCategory();
+
+
+            $boutiquesMemeCategorie = $this->em->getRepository(Boutique::class)->findBy(['category' => $category]);
+            foreach ($boutiquesMemeCategorie as $boutique) {
+                $lProduit = $boutique->getProduits();
+
+
+                foreach ($lProduit as $produit) {
+                    if (count($ListProduits) / $this->myFunction::PAGINATION < $page) {
+                        if ($produit->isStatus() && $produit->getQuantite() > 0 && $produit->getCodeProduit() != $codeProduit) {
+                            $lsImgP = [];
+
+                            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+                            foreach ($lProduitO  as $produit0) {
+                                $lsImgP[]
+                                    = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
+                            }
+
+
+
+                            $produitU =  [
+                                'id' => $produit->getId(),
+                                'codeProduit' => $produit->getCodeProduit(),
+                                'boutique' => $produit->getBoutique()->getTitre(),
+                                'description' => $produit->getDescription(),
+                                'like' => $this->myFunction->isLike_Produit($produit->getId()),     'titre' => $produit->getTitre(),
+                                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
+                                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
+                                'quantite' => $produit->getQuantite(),
+                                'prix' => $produit->getPrixUnitaire(),
+                                'status' => $produit->isStatus(),
+                                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+                                'images' => $lsImgP
+
+                            ];
+                            array_push($ListProduits, $produitU);
+                        }
+                    }
+                }
+            }
+        }
+
+        // $listProduits = $serializer->serialize($lP, 'json');
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $ListProduits
+
+                ],
+                200
+            );
+    }
+
     /**
      * @Route("/produit/read/boutique", name="produitReadBoutique", methods={"POST"})
      * @param Request $request
