@@ -168,8 +168,8 @@ class MyFunction
 
         $produit =
             $listPP->getProduit();
-        $price = ($produit->getPrix() -
-            $produit->getPrix() * $commission->getPourcentageProduit() / 100
+        $price = ($produit->getPrixUnitaire() -
+            $produit->getPrixUnitaire() * $commission->getPourcentageProduit() / 100
             - $commission->getFraisLivraisonProduit()
 
 
@@ -208,7 +208,7 @@ class MyFunction
 
 
             if ($commande->getListCommandeLivreurs()) {
-                $livreur = $commande->getListCommandeLivreurs()->getLivreur();
+                $livreur = $commande->getListCommandeLivreurs()->last()->getLivreur();
                 if ($livreur) {
                     $data = [
                         'commande' => $commande,
@@ -1034,5 +1034,153 @@ class MyFunction
         } else {
             return    $this->getIdShort($comment->getReferenceCommentaire());
         }
+    }
+
+
+    public function ListLikeShort(Short $short)
+    {
+
+        $likeList = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1]);
+        return $likeList;
+    }
+
+
+    public function ListCommentShort(Short $short)
+    {
+
+        $likeList = $this->em->getRepository(ShortComment::class)->findBy(['short' => $short]);
+        return $likeList;
+    }
+
+    public function ListCommentComment(ShortComment $ShortComment)
+    {
+
+        $comList = $this->em->getRepository(ShortComment::class)->findBy(['reference_commentaire' => $ShortComment]);
+        return $comList;
+    }
+    public function ListLikeCommentShort(ShortComment $shortComment)
+    {
+
+        $likeComList = $this->em->getRepository(ShortCommentLike::class)->findBy(['shortComment' => $shortComment, 'like_comment' => 1,]);
+        return $likeComList;
+    }
+
+
+    public function ProduitModel(Produit $produit, UserPlateform $user)
+    {
+
+        $lsImgP = [];
+        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
+        foreach ($lProduitO  as $produit0) {
+            $lsImgP[]
+                = ['id' => $produit0->getId(), 'src' =>  $this::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
+        }
+
+
+        $produit =  [
+            'id' => $produit->getId(),
+            'like' => $this->isLike_Produit($produit->getId()),
+            'islike' =>   $user == null ? false : $this->userlikeProduit($produit->getId(), $user),
+
+            'codeProduit' => $produit->getCodeProduit(),
+            'boutique' => $produit->getBoutique()->getTitre(),
+            'description' => $produit->getDescription(),
+            'titre' => $produit->getTitre(),
+            'quantite' => $produit->getQuantite(),
+            'prix' => $produit->getPrixUnitaire(),
+            'status' => $produit->isStatus(),
+            'negociable' => $produit->isNegociable(),
+            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
+            'images' => $lsImgP
+
+        ];
+        return $produit;
+    }
+
+
+
+
+    public function ShortModel(Short $short, UserPlateform $user)
+    {
+        $boutique = $short->getBoutique();
+
+        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+        $limgB = [];
+
+        foreach ($lBo  as $bo) {
+            $limgB[]
+                = ['id' => $bo->getId(), 'src' =>  $this::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+        }
+        if (empty($limgB)) {
+            $limgB[]
+                = ['id' => 0, 'src' =>  $this::BACK_END_URL . '/images/default/boutique.png'];
+        }
+        $boutiqueU =  [
+            'codeBoutique' => $boutique->getCodeBoutique(),
+            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+            'description' => $boutique->getDescription() ?? "Aucune",
+            'titre' => $boutique->getTitre() ?? "Aucun",
+            'status' => $boutique->isStatus(),
+            'note' => $this->noteBoutique($boutique->getId()),
+
+            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+            'images' => $limgB,
+            'localisation' =>  $boutique->getLocalisation() ? [
+                'ville' =>
+                $boutique->getLocalisation()->getVille(),
+
+                'longitude' =>
+                $boutique->getLocalisation()->getLongitude(),
+                'latitude' =>
+                $boutique->getLocalisation()->getLatitude(),
+            ] : [
+                'ville' =>
+                'incertiane',
+
+                'longitude' =>
+                0.0,
+                'latitude' =>
+                0.0,
+            ]
+        ];
+
+
+        $shortF =  [
+
+            'id' => $short->getId(),
+            'titre' => $short->getTitre() ?? "Aucun",
+            'description' => $short->getDescription() ?? "Aucun",
+            'status' => $short->isStatus(),
+            'Preview' =>  $short->getPreview(),
+            'is_like' =>   $user == null ? false : $this->userlikeShort($short, $user),
+            'src' =>  $short->getSrc(),
+            'codeShort' =>
+            $short->getCodeShort(), 'nbre_like' => count($this->ListLikeShort($short)),
+            'nbre_commentaire' => count($this->ListCommentShort($short)),
+            'date' =>
+            date_format($short->getDateCreated(), 'Y-m-d H:i'),
+            'produits' =>  $this->ProduitForShort($short, $user),
+            'boutique' =>  $boutiqueU
+
+        ];
+
+
+        return $shortF;
+    }
+
+    public function ProduitForShort(Short $short, UserPlateform $user)
+    {
+        $listProduits = [];
+        $listproduitsShort = $short->getListProduitShorts();
+        if ($listproduitsShort) {
+            foreach ($listproduitsShort as $produitShort) {
+                $produit  = $produitShort->getProduit();
+                $produitU =
+                    $this->ProduitModel($produit, $user);
+                array_push($listProduits, $produitU);
+            }
+        }
+
+        return $listProduits;
     }
 }

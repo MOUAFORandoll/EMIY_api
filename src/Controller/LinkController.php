@@ -103,39 +103,18 @@ class LinkController extends AbstractController
                     203
                 );
         }
-        $lsImgP    = [];
-        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-        foreach ($lProduitO as $produit0) {
-            $lsImgP[]
-                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-        }
+        $produitF =
+            $this->myFunction->ProduitModel($produit, $user);
 
 
 
-        $produitU = [
-
-            'id' => $produit->getId(),
-            'like' => $this->myFunction->isLike_produit($produit->getId()),
-            'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
-            'codeProduit' => $produit->getCodeProduit(),
-            'boutique' => $produit->getBoutique()->getTitre(),
-            'description' => $produit->getDescription(),
-            'titre' => $produit->getTitre(),
-            'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-            'quantite' => $produit->getQuantite(),
-            'prix' => $produit->getPrixUnitaire(),
-            'status' => $produit->isStatus(),
-            // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-            'images' => $lsImgP
-
-        ];
 
 
         return
             new JsonResponse(
                 [
                     'data'
-                    =>    $produitU,
+                    =>    $produitF,
 
 
 
@@ -209,24 +188,10 @@ class LinkController extends AbstractController
         $listProduit = [];
         foreach ($boutique->getProduits()  as $produit) {
             if ($produit->isStatus()) {
-                $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                $lsImgP = [];
+                $produitF =
+                    $this->myFunction->ProduitModel($produit, $user);
 
-                foreach ($lProduitO  as $produit0) {
-                    $lsImgP[]
-                        = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-                }
-                $listProduit[] = [
-                    'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
-                    'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
-                    'prix' => $produit->getPrixUnitaire(),
-                    'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
-                    'negociable' => $produit->isNegociable(),    'status' => $produit->isStatus(),
-                    'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                    'description' => $produit->getDescription(),
-                    'images' => $lsImgP
-
-                ];
+                array_push($listProduit, $produitF);
             }
         }
 

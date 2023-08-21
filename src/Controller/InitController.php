@@ -6,6 +6,7 @@ use App\Entity\Boutique;
 use App\Entity\BoutiqueObject;
 use App\Entity\Category;
 use App\Entity\Commission;
+use App\Entity\ListProduitShort;
 use App\Entity\Localisation;
 use App\Entity\ModePaiement;
 use App\Entity\PointLivraison;
@@ -582,6 +583,21 @@ class InitController extends AbstractController
             );
     }
 
+    /**
+     * @Route("/short/faker", name="FakerShort", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     *  
+     * 
+     * 
+     */
     public function FakerShort()
     {
 
@@ -600,25 +616,37 @@ class InitController extends AbstractController
              proident occaec ";
 
         $lBoutique = $this->em->getRepository(Boutique::class)->findAll();
+        $lProduit = $this->em->getRepository(Produit::class)->findAll();
 
 
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             # code...
 
             $faker = Factory::create();
 
 
+            $codeShort
+                = $this->myFunction->getUniqueNameShort();
 
 
             $short = new Short();
             $short->setSrc($listVideoShort[random_int(0, count($listVideoShort) - 1)]);
             $short->setTitre($faker->company);
+            $short->setCodeShort($codeShort);
             $short->setDescription(
                 $paragraphs
             );
             $short->setBoutique($lBoutique[random_int(0, count($lBoutique) - 1)]);
             $this->em->persist($short);
+
+
+            $produit_short = new ListProduitShort();
+            $produit_short->setShort($short);
+            $produit_short->setProduit($lProduit[random_int(0, count($lProduit) - 1)]);
+
+            $this->em->persist($produit_short);
         }
+
         $this->em->flush();
         return
             new JsonResponse(

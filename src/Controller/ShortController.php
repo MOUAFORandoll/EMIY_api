@@ -37,6 +37,8 @@ use App\FunctionU\MyFunction;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Knp\Component\Pager\PaginatorInterface;
 use App\Entity\UserReadShort;
+use App\Entity\ListProduitShort;
+use App\Entity\Produit;
 
 class ShortController extends AbstractController
 {
@@ -85,7 +87,7 @@ class ShortController extends AbstractController
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $page =
-            $request->get('page');
+            $request->get('page') ?? 1;
 
         $lShortF = [];
 
@@ -105,64 +107,8 @@ class ShortController extends AbstractController
 
             if ($boutique) {
                 if ($boutique->isStatus()) {
-                    $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                    $limgB = [];
 
-                    foreach ($lBo  as $bo) {
-                        $limgB[]
-                            = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-                    }
-                    if (empty($limgB)) {
-                        $limgB[]
-                            = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-                    }
-                    $boutiqueU =  [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
-                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                        'description' => $boutique->getDescription() ?? "Aucune",
-                        'titre' => $boutique->getTitre() ?? "Aucun",
-                        'status' => $boutique->isStatus(),
-                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
-
-                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                        'images' => $limgB,
-                        'localisation' =>  $boutique->getLocalisation() ? [
-                            'ville' =>
-                            $boutique->getLocalisation()->getVille(),
-
-                            'longitude' =>
-                            $boutique->getLocalisation()->getLongitude(),
-                            'latitude' =>
-                            $boutique->getLocalisation()->getLatitude(),
-                        ] : [
-                            'ville' =>
-                            'incertiane',
-
-                            'longitude' =>
-                            0.0,
-                            'latitude' =>
-                            0.0,
-                        ]
-                    ];
-
-
-                    $shortF =  [
-
-                        'id' => $short->getId(),
-                        'titre' => $short->getTitre() ?? "Aucun",
-                        'description' => $short->getDescription() ?? "Aucun",
-                        'status' => $short->isStatus(),
-                        'Preview' =>  $short->getPreview(),
-                        'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                        'src' =>  $short->getSrc(),
-                        'codeShort' =>
-                        $short->getCodeShort(), 'nbre_like' => count($this->ListLikeShort($short)),
-                        'nbre_commentaire' => count($this->ListCommentShort($short)),
-                        'date' =>
-                        date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                        'boutique' =>  $boutiqueU
-
-                    ];
+                    $shortF =     $this->myFunction->ShortModel($short, $user);
                     array_push($lShortF, $shortF);
                 }
             }
@@ -238,66 +184,8 @@ class ShortController extends AbstractController
         }
         $boutique = $short->getBoutique();
 
-        if ($boutique) {
-            if ($boutique->isStatus()) {
-                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                $limgB = [];
 
-                foreach ($lBo  as $bo) {
-                    $limgB[]
-                        = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-                }
-                if (empty($limgB)) {
-                    $limgB[]
-                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-                }
-                $boutiqueU =  [
-                    'codeBoutique' => $boutique->getCodeBoutique(),
-                    'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                    'description' => $boutique->getDescription() ?? "Aucune",
-                    'titre' => $boutique->getTitre() ?? "Aucun",
-                    'status' => $boutique->isStatus(),
-                    'note' => $this->myFunction->noteBoutique($boutique->getId()),
-
-                    'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                    'images' => $limgB,
-                    'localisation' =>  $boutique->getLocalisation() ? [
-                        'ville' =>
-                        $boutique->getLocalisation()->getVille(),
-
-                        'longitude' =>
-                        $boutique->getLocalisation()->getLongitude(),
-                        'latitude' =>
-                        $boutique->getLocalisation()->getLatitude(),
-                    ] : [
-                        'ville' =>
-                        'incertiane',
-
-                        'longitude' =>
-                        0.0,
-                        'latitude' =>
-                        0.0,
-                    ]
-                ];
-            }
-        }
-        $shortF =  [
-
-            'id' => $short->getId(),
-            'titre' => $short->getTitre() ?? "Aucun",
-            'description' => $short->getDescription() ?? "Aucun",
-            'status' => $short->isStatus(),
-            'Preview' =>  $short->getPreview(),
-            'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-            'src' =>  $short->getSrc(),
-            'codeShort' =>
-            $short->getCodeShort(),    'nbre_like' => count($this->ListLikeShort($short)),
-            'nbre_commentaire' => count($this->ListCommentShort($short)),
-            'date' =>
-            date_format($short->getDateCreated(), 'Y-m-d H:i'),
-            'boutique' =>  $boutiqueU
-
-        ];
+        $shortF =     $this->myFunction->ShortModel($short, $user);
 
 
         return
@@ -446,9 +334,9 @@ class ShortController extends AbstractController
                 'Preview' => $short->getPreview(),
                 'src' => $short->getSrc(),
                 'is_like' => $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                'nbre_like' => count($this->ListLikeShort($short)),
+                'nbre_like' => count($this->myFunction->ListLikeShort($short)),
                 'codeShort' =>
-                $short->getCodeShort(),     'nbre_commentaire' => count($this->ListCommentShort($short)),
+                $short->getCodeShort(),     'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
                 'date' =>
                 date_format($short->getDateCreated(), 'Y-m-d H:i'),
                 'boutique' => $boutiqueU
@@ -528,9 +416,9 @@ class ShortController extends AbstractController
             'commentaire' => $comment->getComment() ?? "Aucun",
             'username' => $comment->getClient()->getNom() . ' ' . $comment->getClient()->getPreNom() ?? "Aucun",
             'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
-            'nbre_com' => count($this->ListCommentComment($comment)),
+            'nbre_com' => count($this->myFunction->ListCommentComment($comment)),
             'sub_responses' => false,
-            'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comment)),
+            'target_user' => '', 'nbre_like_com' => count($this->myFunction->ListLikeCommentShort($comment)),
             'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comment, $user),
 
 
@@ -633,9 +521,9 @@ class ShortController extends AbstractController
                 'commentaire' => $com->getComment() ?? "Aucun",
                 'username' => $com->getClient()->getNom() . ' ' . $com->getClient()->getPreNom() ?? "Aucun",
                 'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
-                'nbre_com' => count($this->ListCommentComment($com)),
+                'nbre_com' => count($this->myFunction->ListCommentComment($com)),
                 'sub_responses' => false,
-                'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($com)),
+                'target_user' => '', 'nbre_like_com' => count($this->myFunction->ListLikeCommentShort($com)),
                 'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($com, $user),
 
             ];
@@ -653,35 +541,6 @@ class ShortController extends AbstractController
         }
     }
 
-
-
-    public function ListLikeShort(Short $short)
-    {
-
-        $likeList = $this->em->getRepository(ShortLike::class)->findBy(['short' => $short, 'like_short' => 1]);
-        return $likeList;
-    }
-
-
-    public function ListCommentShort(Short $short)
-    {
-
-        $likeList = $this->em->getRepository(ShortComment::class)->findBy(['short' => $short]);
-        return $likeList;
-    }
-
-    public function ListCommentComment(ShortComment $ShortComment)
-    {
-
-        $comList = $this->em->getRepository(ShortComment::class)->findBy(['reference_commentaire' => $ShortComment]);
-        return $comList;
-    }
-    public function ListLikeCommentShort(ShortComment $shortComment)
-    {
-
-        $likeComList = $this->em->getRepository(ShortCommentLike::class)->findBy(['shortComment' => $shortComment, 'like_comment' => 1,]);
-        return $likeComList;
-    }
 
     /**
      * @Route("/comment/short/", name="CommentShortList", methods={"GET"})
@@ -718,9 +577,9 @@ class ShortController extends AbstractController
                 date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
                 'userphoto' =>   $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
-                'nbre_com' => count($this->ListCommentComment($comm)),
+                'nbre_com' => count($this->myFunction->ListCommentComment($comm)),
                 'sub_responses' => false,
-                'target_user' => '', 'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'target_user' => '', 'nbre_like_com' => count($this->myFunction->ListLikeCommentShort($comm)),
                 'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
 
             ];
@@ -777,10 +636,10 @@ class ShortController extends AbstractController
                 date_format($Commmentaire->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom() . ' ' . $comm->getClient()->getPreNom() ?? "Aucun",
                 'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
-                'nbre_com' =>  0, //count($this->ListCommentComment($comm)),
+                'nbre_com' =>  0, //count( $this->myFunction->ListCommentComment($comm)),
                 'sub_responses' => false,
                 'target_user' => '',
-                'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'nbre_like_com' => count($this->myFunction->ListLikeCommentShort($comm)),
                 'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
 
             ];
@@ -822,8 +681,8 @@ class ShortController extends AbstractController
                 date_format($comm->getDateCreated(), 'Y-m-d H:i'),   'commentaire' => $comm->getComment() ?? "Aucun",
                 'username' => $comm->getClient()->getNom(),
                 'userphoto' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
-                'nbre_com' => /* count($this->ListCommentComment($comm)) */ 0,
-                'nbre_like_com' => count($this->ListLikeCommentShort($comm)),
+                'nbre_com' => /* count( $this->myFunction->ListCommentComment($comm)) */ 0,
+                'nbre_like_com' => count($this->myFunction->ListLikeCommentShort($comm)),
                 'is_like_com' =>   $user == null ? false : $this->myFunction->userlikeShortCom($comm, $user),
                 'sub_responses' => true,
                 'target_user' => $commming->getClient()->getNom(),
@@ -958,45 +817,6 @@ class ShortController extends AbstractController
         $codeBoutique =
             $request->get('codeBoutique');
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
-        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-        $limgB = [];
-
-        foreach ($lBo  as $bo) {
-            $limgB[]
-                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-        }
-        if (empty($limgB)) {
-            $limgB[]
-                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-        }
-        $boutiqueU =  [
-            'codeBoutique' => $boutique->getCodeBoutique(),
-            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-            'description' => $boutique->getDescription() ?? "Aucune",
-            'titre' => $boutique->getTitre() ?? "Aucun",
-            'status' => $boutique->isStatus(),
-            'note' => $this->myFunction->noteBoutique($boutique->getId()),
-
-            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-            'images' => $limgB,
-            'localisation' =>  $boutique->getLocalisation() ? [
-                'ville' =>
-                $boutique->getLocalisation()->getVille(),
-
-                'longitude' =>
-                $boutique->getLocalisation()->getLongitude(),
-                'latitude' =>
-                $boutique->getLocalisation()->getLatitude(),
-            ] : [
-                'ville' =>
-                'incertiane',
-
-                'longitude' =>
-                0.0,
-                'latitude' =>
-                0.0,
-            ]
-        ];
 
         $result = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
         $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
@@ -1004,24 +824,8 @@ class ShortController extends AbstractController
 
 
 
+            $shortF =     $this->myFunction->ShortModel($short, $user);
 
-            $shortF =  [
-
-                'id' => $short->getId(),
-                'titre' => $short->getTitre() ?? "Aucun",
-                'description' => $short->getDescription() ?? "Aucun",
-                'status' => $short->isStatus(),
-                'Preview' =>  $short->getPreview(),
-                'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                'src' =>  $short->getSrc(),
-                'codeShort' =>
-                $short->getCodeShort(), 'nbre_like' => count($this->ListLikeShort($short)),
-                'nbre_commentaire' => count($this->ListCommentShort($short)),
-                'date' =>
-                date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                'boutique' =>  $boutiqueU
-
-            ];
             array_push($lShortF, $shortF);
         }
 
@@ -1066,73 +870,16 @@ class ShortController extends AbstractController
         $codeBoutique =
             $request->get('codeBoutique');
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $codeBoutique]);
-        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-        $limgB = [];
-
-        foreach ($lBo  as $bo) {
-            $limgB[]
-                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-        }
-        if (empty($limgB)) {
-            $limgB[]
-                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-        }
-        $boutiqueU =  [
-            'codeBoutique' => $boutique->getCodeBoutique(),
-            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-            'description' => $boutique->getDescription() ?? "Aucune",
-            'titre' => $boutique->getTitre() ?? "Aucun",
-            'status' => $boutique->isStatus(),
-            'note' => $this->myFunction->noteBoutique($boutique->getId()),
-
-            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-            'images' => $limgB,
-            'localisation' =>  $boutique->getLocalisation() ? [
-                'ville' =>
-                $boutique->getLocalisation()->getVille(),
-
-                'longitude' =>
-                $boutique->getLocalisation()->getLongitude(),
-                'latitude' =>
-                $boutique->getLocalisation()->getLatitude(),
-            ] : [
-                'ville' =>
-                'incertiane',
-
-                'longitude' =>
-                0.0,
-                'latitude' =>
-                0.0,
-            ]
-        ];
-
+        $user         = $boutique->getUser();
         $lShort = $this->em->getRepository(Short::class)->findBy(['boutique' => $boutique]);
         foreach ($lShort as $short) {
 
 
 
 
-            $shortF =  [
-                'id' => $short->getId(),
-                'titre' => $short->getTitre() ?? "Aucun",
-                'description' => $short->getDescription() ?? "Aucun",
-                'status' => $short->isStatus(),
-                'Preview' =>  $short->getPreview(),
-                'codeShort' =>
-                $short->getCodeShort(),
-                'src' =>  $short->getSrc(), 'is_like' =>   $boutique->getUser() == null ? false : $this->myFunction->userlikeShort($short, $boutique->getUser()),
+            $shortF =     $this->myFunction->ShortModel($short, $user);
 
-                'nbre_like' => count($this->ListLikeShort($short)),
-                'nbre_commentaire' => count($this->ListCommentShort($short)),
-                'date' =>
-                date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                'boutique'
-                => $boutiqueU
-
-
-
-            ];
-            array_push($lShortF, $shortF);
+            $lShortF[] =  $shortF;
         }
 
         return
@@ -1177,6 +924,7 @@ class ShortController extends AbstractController
             'description' => $request->get('description'),
 
             'codeBoutique' => $request->get('codeBoutique'),
+            'produits' => $request->get('produits'),
         ];
 
         if (
@@ -1196,6 +944,7 @@ class ShortController extends AbstractController
 
         $titre = $data['titre'];
         $description = $data['description'];
+        $produits =    $data['produits'];
         // dd( $this->getParameter( 'shorts_object' ) );
 
         $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['codeBoutique' => $data['codeBoutique']]);
@@ -1247,6 +996,18 @@ class ShortController extends AbstractController
             );
             $short->setBoutique($boutique);
             $this->em->persist($short);
+            $produits = explode(',', $produits);
+            if (!empty($produits)) {
+                foreach ($produits  as $id) {
+                    $produit = $this->em->getRepository(Produit::class)->findOneBy(['id' => $id]);
+
+                    $produit_short = new ListProduitShort();
+                    $produit_short->setShort($short);
+                    $produit_short->setProduit($produit);
+
+                    $this->em->persist($produit_short);
+                }
+            }
             $this->em->flush();
 
             return

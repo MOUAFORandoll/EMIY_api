@@ -312,30 +312,13 @@ class AbonnementBoutiqueController extends AbstractController
                 # code... 
 
                 if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                    $lsImgP    = [];
-                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    foreach ($lProduitO as $produit0) {
-                        $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-                    }
-                    $produitU = [
+                    
 
-                        'id' => $produit->getId(),
-                        'like' => $this->myFunction->isLike_produit($produit->getId()),
-                        'islike' =>   $client == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $client),
-                        'codeProduit' => $produit->getCodeProduit(),
-                        'boutique' => $produit->getBoutique()->getTitre(),
-                        'description' => $produit->getDescription(),
-                        'titre' => $produit->getTitre(),
-                        'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                        'quantite' => $produit->getQuantite(),
-                        'prix' => $produit->getPrixUnitaire(),
-                        'status' => $produit->isStatus(),
-                        // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                        'images' => $lsImgP
 
-                    ];
-                    array_push($lP, $produitU);
+                    $produitF =
+                        $this->myFunction->ProduitModel($produit, $client);
+
+                    array_push($lP, $produitF);
                 }
             }
         }

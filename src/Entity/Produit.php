@@ -108,6 +108,9 @@ class Produit
     #[ORM\Column(nullable: true)]
     private ?bool $negociable = false;
 
+    #[ORM\OneToMany(mappedBy: 'produit', targetEntity: ListProduitShort::class)]
+    private Collection $listProduitShorts;
+
     public function __construct()
     {
         $this->dateCreated = new \DateTime();
@@ -116,6 +119,7 @@ class Produit
         $this->produitObjects = new ArrayCollection();
         $this->listProduitPaniers = new ArrayCollection();
         $this->negociationProduits = new ArrayCollection();
+        $this->listProduitShorts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -371,6 +375,36 @@ class Produit
     public function setNegociable(?bool $negociable): self
     {
         $this->negociable = $negociable;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListProduitShort>
+     */
+    public function getListProduitShorts(): Collection
+    {
+        return $this->listProduitShorts;
+    }
+
+    public function addListProduitShorts(ListProduitShort $listProduitShorts): static
+    {
+        if (!$this->listProduitShorts->contains($listProduitShorts)) {
+            $this->listProduitShorts->add($listProduitShorts);
+            $listProduitShorts->setProduit($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListProduitShorts(ListProduitShort $listProduitShorts): static
+    {
+        if ($this->listProduitShorts->removeElement($listProduitShorts)) {
+            // set the owning side to null (unless already changed)
+            if ($listProduitShorts->getProduit() === $this) {
+                $listProduitShorts->setProduit(null);
+            }
+        }
 
         return $this;
     }

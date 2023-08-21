@@ -18,6 +18,8 @@ use App\Entity\TypeTransaction;
 use App\Entity\TypeUser;
 use App\Entity\UserPlateform;
 use Faker\Factory;
+use FFMpeg\Coordinate\Dimension;
+use FFMpeg\Format\Video\X264;
 use Lcobucci\JWT\Encoder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -48,6 +50,7 @@ use ElephantIO\Engine\SocketIO;
 
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use FFMpeg\FFMpeg;
 
 class TestController extends AbstractController
 {
@@ -413,38 +416,36 @@ class TestController extends AbstractController
     }
 
     /**
-     * @Route("/video-stream", name="video_stream")
+     * @Route("/transcode", name="TRANSCODE")
      */
-    public function videoStreamAction(Request $request)
+    public function TRANSCODE(Request $request)
     {
-        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/produitZt0RX.mp4';
+        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/6dd9d072b51e57060fdd9e64cd437c24.mp4';
+        // ...
 
-        $segment = $request->query->get('segment');
-        // $segmentPath = $videoPath . '/' . $segment;
-        $videoSize = filesize($videoPath);
-        $videoMimeType = mime_content_type($videoPath);
+        // Instanciation de FFmpeg
+        $ffmpeg = FFMpeg::create();
 
-        // Créez une réponse en streaming
-        $response = new StreamedResponse(function () use ($videoPath) {
-            // Ouvrez le fichier vidéo en mode lecture binaire
-            $file = fopen($videoPath, 'rb');
+        // Ouvrir une vidéo à transcoder
+        $video = $ffmpeg->open($videoPath);
 
-            // Écrivez les données en streaming
-            while (!feof($file)) {
-                echo fread($file, 10);
-                flush();
-            }
 
-            // Fermez le fichier
-            fclose($file);
-        });
+        // Définir les paramètres de transcodage
+        $format = new X264();
+        $format->setKiloBitrate(10000); // Débit binaire en kilobits par seconde
+        $format->setAudioCodec('aac');
 
-        // Définissez les en-têtes de réponse appropriés pour le streaming vidéo
-        $response->headers->set('Content-Type', $videoMimeType);
-        $response->headers->set('Content-Length', $videoSize);
-        $response->headers->set('Accept-Ranges', 'bytes');
+        // Transcoder et enregistrer la vidéo
+        $video->save($format, $this->getParameter('kernel.project_dir') .  '/public/videos/aaaa.mp4');
+        return
+            new JsonResponse(
+                [
+                    'message'
+                    =>  'success',
 
-        return $response;
+                ],
+                200
+            );
     }
     /**
      * @Route("/video", name="stream_video")
@@ -593,5 +594,53 @@ class TestController extends AbstractController
 
                 ], 203);
         }
+    }
+
+
+    /**
+     * @Route("/stream", name="video_stream")
+     */
+    public function video_stream(Request $request)
+    {
+        $videoPath = '../public/videos/shorts/\6dd9d072b51e57060fdd9e64cd437c24.mp4';
+
+        if (!file_exists($videoPath)) {
+            throw $this->createNotFoundException('La vidéo n\'existe pas.');
+        }
+
+        $response = new BinaryFileResponse($videoPath);
+
+        // Set headers for streaming
+        $response->headers->set('Content-Type', 'video/mp4');
+        $response->headers->set('Content-Length', filesize($videoPath));
+        $response->headers->set('Accept-Ranges', 'bytes');
+
+        // Check if range headers are present
+        $rangeHeader = $request->headers->get('Range');
+        $rangeHeader = $request->headers->get('Range');
+        if ($rangeHeader) {
+            list($start, $end) = explode('-', str_replace('bytes=', '', $rangeHeader));
+
+            // Make sure the range is valid
+            if ($start > filesize($videoPath)) {
+                $start = 0;
+            }
+            if ($end > filesize($videoPath)) {
+                $end = filesize($videoPath);
+            }
+
+            $response->headers->set('Content-Range', "bytes $start-$end/" . filesize($videoPath));
+            $response->headers->set('Content-Length', intval($end) - intval($start) + 1);
+            $response->setStatusCode(206);
+
+            // Open the file and send the content
+            $file = fopen($videoPath, 'rb');
+            // $response->sendContent($file, $start, $end - $start);
+        } else {
+            $file = fopen($videoPath, 'rb');
+            // $response->sendContent($file);
+        }
+
+        return $response;
     }
 }

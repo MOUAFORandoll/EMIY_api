@@ -73,7 +73,7 @@ class Boutique
         $this->dateCreated = new \DateTime();
         $this->dateFirstActivated = new \DateTime();
         $this->dateLastDesactivated = new \DateTime();
-        $this->dateCreated = new \DateTime();
+      
         $this->produits = new ArrayCollection();
         $this->boutiqueObjects = new ArrayCollection();
         $this->shorts = new ArrayCollection();

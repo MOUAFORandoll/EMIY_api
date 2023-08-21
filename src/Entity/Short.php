@@ -51,6 +51,9 @@ class Short
     #[ORM\OneToMany(mappedBy: 'short', targetEntity: UserReadShort::class)]
     private Collection $userReadShorts;
 
+    #[ORM\OneToMany(mappedBy: 'short', targetEntity: ListProduitShort::class)]
+    private Collection $listProduitShorts;
+
 
     public function getId(): ?int
     {
@@ -74,6 +77,7 @@ class Short
         $this->shortLikes = new ArrayCollection();
         $this->shortComments = new ArrayCollection();
         $this->userReadShorts = new ArrayCollection();
+        $this->listProduitShorts = new ArrayCollection();
     }
     public function getDateCreated(): ?\DateTimeInterface
     {
@@ -241,6 +245,36 @@ class Short
             // set the owning side to null (unless already changed)
             if ($userReadShorts->getShort() === $this) {
                 $userReadShorts->setShort(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, ListProduitShort>
+     */
+    public function getListProduitShorts(): Collection
+    {
+        return $this->listProduitShorts;
+    }
+
+    public function addListProduitShorts(ListProduitShort $listProduitShorts): static
+    {
+        if (!$this->listProduitShorts->contains($listProduitShorts)) {
+            $this->listProduitShorts->add($listProduitShorts);
+            $listProduitShorts->setShort($this);
+        }
+
+        return $this;
+    }
+
+    public function removeListProduitShorts(ListProduitShort $listProduitShorts): static
+    {
+        if ($this->listProduitShorts->removeElement($listProduitShorts)) {
+            // set the owning side to null (unless already changed)
+            if ($listProduitShorts->getShort() === $this) {
+                $listProduitShorts->setShort(null);
             }
         }
 

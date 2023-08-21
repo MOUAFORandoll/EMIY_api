@@ -9,6 +9,7 @@ use App\Entity\Localisation;
 use App\Entity\Notification;
 use App\Entity\Produit;
 use App\Entity\ProduitObject;
+use App\Entity\Short;
 use App\Entity\UserPlateform;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -59,36 +60,92 @@ class GeneralController extends AbstractController
     }
 
     /**
-     * @Route("/search", name="search", methods={"POST"})
+     * @Route("/search", name="search", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      */
     public function search(Request $request)
     {
-        $data = $request->toArray();
+        $search = $request->get('key');
         // if (empty($data['type']) || empty($data['search'])) {
         //     return new JsonResponse([
         //         'message' => 'Veuillez recharger la page et reessayer '
         //     ], 400);
         // }
-        $a = 0;
-        $type = $data['type'];
-        $search = $data['search'];
-        $finalData = [];
-        if ((int)  $type == 0) {
-            $finalData =    $this->searchProduit($search);
-        }
-        if ((int)  $type == 1) {
-            $a
-                = 100;
 
-            $finalData =    $this->searchBoutique($search);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        /**   si type == 0 , on update la recharche de produit uniquement , 1 =>boutique, 2 =>categorie   , 3 =>shorts      tous ceci en faisant la pagination et sans toute fois toucher aux autres resultats*/
+        $type = $request->get('type');
+        $page = $request->get('page');
+        if ($type != null && $page != null) {
+            if ($type == 0) {
+
+                $produit =    $this->searchProduit($search, $user, $page);
+
+
+
+                return new JsonResponse([
+                    'produit' => $produit, 'type' => 0
+
+
+                ], 200);
+            }
+            if ($type == 1) {
+
+
+
+                $boutique =    $this->searchBoutique($search, $user, $page);
+
+
+                return new JsonResponse([
+
+                    'boutique' => $boutique, 'type' => 1
+
+
+                ], 200);
+            }
+            if ($type == 2) {
+
+
+                $categorie =   $this->searchCategory($search, $user, $page);
+
+                return new JsonResponse([
+
+                    'categorie' => $categorie, 'type' => 2
+
+
+                ], 200);
+            }
+            if ($type == 3) {
+
+
+                $short =   $this->searchShort($search, $user, $page);
+
+                return new JsonResponse([
+
+                    'short' => $short,
+                    'type' => 3
+
+
+                ], 200);
+            }
         }
-        if ((int)  $type == 2) {
-            $finalData =   $this->searchCategory($search);
-        }
+
+        $finalData = [];
+
+        $produit =    $this->searchProduit($search, $user, $page);
+
+
+        $boutique =    $this->searchBoutique($search, $user, $page);
+
+        $categorie =   $this->searchCategory($search, $user, $page);
+        $short     = $this->searchShort($search, $user, $page);
         return new JsonResponse([
-            'data' => $finalData,
+            'produit' => $produit,
+            'boutique' => $boutique,
+            'categorie' => $categorie,
+            'short' => $short,
 
 
         ], 200);
@@ -96,14 +153,22 @@ class GeneralController extends AbstractController
 
 
 
-    public function searchProduit($search)
+    public function searchProduit($search,  $user, $page)
     {
         $data = [];
 
 
         $lProduit = $this->em->getRepository(Produit::class)->findAll();
         if ($lProduit) {
-            foreach ($lProduit  as $produit) {
+
+            $start = $page * 10;
+            $end =
+                count($lProduit) - $start > $start + 10 ? $start + 10 :
+                count($lProduit);
+
+            for ($i = $start; $i < $end; $i++) {
+                $produit = $lProduit[$i];
+
                 if (str_contains(
 
                     strtolower(
@@ -115,29 +180,11 @@ class GeneralController extends AbstractController
 
 
 
-                    $lsImgP = [];
-                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    foreach ($lProduitO  as $produit0) {
-                        $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-                    }
 
+                    $produitF =
+                        $this->myFunction->ProduitModel($produit, $user);
 
-
-                    $produit =  [
-                        'id' => $produit->getId(),
-                        'codeProduit' => $produit->getCodeProduit(),
-                        'boutique' => $produit->getBoutique()->getTitre(),
-                        'description' => $produit->getDescription(),
-                        'titre' => $produit->getTitre(),
-                        'quantite' => $produit->getQuantite(),
-                        'prix' => $produit->getPrixUnitaire(),
-                        'status' => $produit->isStatus(),
-                        // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                        'images' => $lsImgP
-
-                    ];
-                    array_push($data, $produit);
+                    array_push($data, $produitF);
                 }
                 // $listProduits = $serializer->serialize($lP, 'json');
             }
@@ -146,7 +193,8 @@ class GeneralController extends AbstractController
         }
     }
 
-    public function searchBoutique($search)
+    public function
+    searchBoutique($search,  $user, $page)
     {
         $data = [];
 
@@ -155,8 +203,14 @@ class GeneralController extends AbstractController
 
         if ($lBoutique) {
 
+            $start = $page * 10;
+            $end =
+                count($lBoutique) - $start > $start + 10 ? $start + 10 :
+                count($lBoutique);
 
-            foreach ($lBoutique  as $boutique) {
+            for ($i = $start; $i < $end; $i++) {
+                $boutique = $lBoutique[$i];
+
 
 
 
@@ -169,6 +223,134 @@ class GeneralController extends AbstractController
 
                     if ($boutique->getUser()) {
 
+                        $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                        $limgB = [];
+
+                        foreach ($lBo as $bo) {
+                            $limgB[]
+                                = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+                        }
+                        if (empty($limgB)) {
+                            $limgB[]
+                                = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                        }
+
+                        if ($boutique->getUser()) {
+                            $boutiqueU = [
+                                'codeBoutique' => $boutique->getCodeBoutique(),
+                                'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                                'description' => $boutique->getDescription() ?? "Aucune",
+                                'titre' => $boutique->getTitre() ?? "Aucun",
+                                'status' => $boutique->isStatus(),
+                                'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                                'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
+                                'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                                'images' => $limgB,
+                                'localisation' => $boutique->getLocalisation() ? [
+                                    'ville' =>
+                                    $boutique->getLocalisation()->getVille(),
+
+                                    'longitude' =>
+                                    $boutique->getLocalisation()->getLongitude(),
+                                    'latitude' =>
+                                    $boutique->getLocalisation()->getLatitude(),
+                                ] : [
+                                    'ville' =>
+                                    'incertiane',
+
+                                    'longitude' =>
+                                    0.0,
+                                    'latitude' =>
+                                    0.0,
+                                ]
+                                // 'produits' => $listProduit,
+
+
+                            ];
+                            array_push($data, $boutiqueU);
+                        }
+                    }
+                }
+                // $listBoutiques = $serializer->serialize($lB, 'json');
+
+
+            }
+        }
+        return
+            $data;
+    }
+
+    public function
+    searchCategory($search, $user, $page)
+    {
+        $data = [];
+        $lCategory = $this->em->getRepository(Category::class)->findAll();
+
+        if ($lCategory) {
+
+            $start = $page * 10;
+            $end =
+                count($lCategory) - $start > $start + 10 ? $start + 10 :
+                count($lCategory);
+
+            for ($i = $start; $i < $end; $i++) {
+                $category = $lCategory[$i];
+
+
+                if (
+                    str_contains(
+                        strtolower($category->getLibelle()),
+                        strtolower($search)
+
+                    )
+                ) {
+                    if ($category->isStatus()) {
+                        $categoryU =  [
+                            'id' => $category->getId(),
+                            'libelle' => $category->getLibelle(),
+                            'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
+
+                            'description' => $category->getDescription(),
+                            // 'titre' => $category->getTitre(), 
+                            'status' => $category->isStatus(),
+
+                        ];
+                        array_push($data, $categoryU);
+                    }
+                }
+            }
+        }
+        return
+            $data;
+    }
+
+
+    public function
+    searchShort($search,  $user, $page)
+    {
+        $data = [];
+        $lShort = $this->em->getRepository(Short::class)->findAll();
+
+
+
+        $start = $page * 10;
+        $end =
+            count($lShort) - $start > $start + 10 ? $start + 10 :
+            count($lShort);
+
+        for ($i = $start; $i < $end; $i++) {
+            $short = $lShort[$i];
+            if (
+                str_contains(
+                    strtolower($short->getTitre()),
+                    strtolower($search)
+
+                )
+            ) {
+                $boutique = $short->getBoutique();
+
+                if ($boutique) {
+                    if ($boutique->isStatus()) {
                         $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                         $limgB = [];
 
@@ -186,10 +368,11 @@ class GeneralController extends AbstractController
                             'description' => $boutique->getDescription() ?? "Aucune",
                             'titre' => $boutique->getTitre() ?? "Aucun",
                             'status' => $boutique->isStatus(),
+                            'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
                             'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                             'images' => $limgB,
-                            'localisation' =>  $boutique->getLocalisation() != null ? [
+                            'localisation' =>  $boutique->getLocalisation() ? [
                                 'ville' =>
                                 $boutique->getLocalisation()->getVille(),
 
@@ -206,50 +389,27 @@ class GeneralController extends AbstractController
                                 'latitude' =>
                                 0.0,
                             ]
-                            // 'produits' => $listProduit,
+                        ];
 
+
+                        $shortF =  [
+
+                            'id' => $short->getId(),
+                            'titre' => $short->getTitre() ?? "Aucun",
+                            'description' => $short->getDescription() ?? "Aucun",
+                            'status' => $short->isStatus(),
+                            'Preview' =>  $short->getPreview(),
+                            'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                            'src' =>  $short->getSrc(),
+                            'codeShort' =>
+                            $short->getCodeShort(), 'nbre_like' => count($this->myFunction->ListLikeShort($short)),
+                            'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
+                            'date' =>
+                            date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                            'boutique' =>  $boutiqueU
 
                         ];
-                        array_push($data, $boutiqueU);
-                    }
-                }
-                // $listBoutiques = $serializer->serialize($lB, 'json');
-
-                return $data;
-            }
-        }
-        return
-            $data;
-    }
-
-    public function searchCategory($search)
-    {
-        $data = [];
-        $lCategory = $this->em->getRepository(Category::class)->findAll();
-
-        if ($lCategory) {
-
-
-
-            foreach ($lCategory  as $category) {
-                if (
-                    str_contains(
-                        strtolower($category->getLibelle()),
-                        strtolower($search)
-
-                    )
-                ) {
-                    if ($category->isStatus()) {
-                        $categoryU =  [
-                            'id' => $category->getId(),
-                            'libelle' => $category->getLibelle(),
-                            'icon' => $category->getFlutterIcon(),
-                            'description' => $category->getDescription(),
-                            // 'titre' => $category->getTitre(), 
-                            'status' => $category->isStatus(),
-
-                        ];
-                        array_push($data, $categoryU);
+                        array_push($data, $shortF);
                     }
                 }
             }
@@ -445,42 +605,19 @@ class GeneralController extends AbstractController
 
 
         $result = $this->em->getRepository(Produit::class)->findAll();
-        $lProduit = $this->paginator->paginate($result, 1,  $this->myFunction::PAGINATION  );
-        $data = [];
+        $lProduit = $this->paginator->paginate($result, 1,  $this->myFunction::PAGINATION);
+        $listProduit = [];
 
         foreach ($lProduit  as $produit) {
-            $lsImgP = [];
-            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-            foreach ($lProduitO  as $produit0) {
-                $lsImgP[]
-                    = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-            }
+            $produitF =
+                $this->myFunction->ProduitModel($produit, $user);
 
-
-
-            $produit =  [
-                'id' => $produit->getId(),
-                'like' => $this->myFunction->isLike_Produit($produit->getId()),
-                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
-
-                'codeProduit' => $produit->getCodeProduit(),
-                'boutique' => $produit->getBoutique()->getTitre(),
-                'description' => $produit->getDescription(),
-                'titre' => $produit->getTitre(),
-                'quantite' => $produit->getQuantite(),
-                'prix' => $produit->getPrixUnitaire(),
-                'status' => $produit->isStatus(),
-                'negociable' => $produit->isNegociable(),
-                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                'images' => $lsImgP
-
-            ];
-            array_push($data, $produit);
+            array_push($listProduit, $produitF);
         }
         // $listProduits = $serializer->serialize($lP, 'json');
 
         return
-            $data;
+            $listProduit;
     }
 
 

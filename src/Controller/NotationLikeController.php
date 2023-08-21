@@ -168,31 +168,10 @@ class NotationLikeController  extends AbstractController
 
 
             $produit = $like->getProduit();
+            $produitF =
+                $this->myFunction->ProduitModel($produit, $user);
 
-            $lsImgP    = [];
-            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-            foreach ($lProduitO as $produit0) {
-                $lsImgP[]
-                    = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-            }
-            $produitU = [
-
-                'id' => $produit->getId(),
-                'like' => $this->myFunction->isLike_produit($produit->getId()),
-                'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
-                'codeProduit' => $produit->getCodeProduit(),
-                'boutique' => $produit->getBoutique()->getTitre(),
-                'description' => $produit->getDescription(),
-                'titre' => $produit->getTitre(),
-                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                'quantite' => $produit->getQuantite(),
-                'prix' => $produit->getPrixUnitaire(),
-                'status' => $produit->isStatus(),
-                // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
-                'images' => $lsImgP
-
-            ];
-            $lP[] = $produitU;
+            array_push($lP, $produitF);
         }
         return new JsonResponse([
 

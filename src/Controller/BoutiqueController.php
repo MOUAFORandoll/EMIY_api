@@ -504,23 +504,11 @@ class BoutiqueController extends AbstractController
                 $listProduit = [];
                 foreach ($boutique->getProduits()  as $produit) {
                     if ($produit->isStatus()) {
-                        $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                        $lsImgP = [];
+                        $produitF =
+                            $this->myFunction->ProduitModel($produit, $user);
 
-                        foreach ($lProduitO  as $produit0) {
-                            $lsImgP[]
-                                = ['id' => $produit0->getId(), 'src' => $this->myFunction::BACK_END_URL . 'images/produits/' . $produit0->getSrc()];
-                        }
-                        $listProduit[] = [
-                            'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
-                            'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
-                            'prix' => $produit->getPrixUnitaire(),
-                            'negociable' => $produit->isNegociable(),    'status' => $produit->isStatus(),
-                            'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                            'description' => $produit->getDescription(),
-                            'images' => $lsImgP
-
-                        ];
+                        array_push($listProduit, $produitF);
+                           
                     }
                 }
 
@@ -637,23 +625,14 @@ class BoutiqueController extends AbstractController
                     $listProduit = [];
                     foreach ($boutique->getProduits()  as $produit) {
                         if ($produit->isStatus()) {
-                            $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                            $lsImgP = [];
 
-                            foreach ($lProduitO  as $produit0) {
-                                $lsImgP[]
-                                    = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-                            }
-                            $listProduit[] = [
-                                'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
-                                'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
-                                'prix' => $produit->getPrixUnitaire(),
-                                'status' => $produit->isStatus(),
-                                'negociable' => $produit->isNegociable(), 'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                                'description' => $produit->getDescription(),
-                                'images' => $lsImgP
 
-                            ];
+
+                            $produitF =
+                                $this->myFunction->ProduitModel($produit, $admin);
+
+                            array_push($listProduit, $produitF);
+                           
                         }
                     }
 
@@ -787,26 +766,10 @@ class BoutiqueController extends AbstractController
             $listProduit = [];
             foreach ($boutique->getProduits()  as $produit) {
                 if ($produit->isStatus()) {
-                    $lProduitO = $this->em->getRepository(ProduitObject::class)->findBy(['produit' => $produit]);
-                    $lsImgP = [];
+                    $produitF =
+                        $this->myFunction->ProduitModel($produit, $user);
 
-                    foreach ($lProduitO  as $produit0) {
-                        $lsImgP[]
-                            = ['id' => $produit0->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/produits/' . $produit0->getSrc()];
-                    }
-                    $listProduit[] = [
-                        'id' => $produit->getId(), 'codeProduit' => $produit->getCodeProduit(),
-                        'titre' => $produit->getTitre(), 'quantite' => $produit->getQuantite(),
-                        'prix' => $produit->getPrixUnitaire(),
-                        'description' => $produit->getDescription(),
-                        'status' => $produit->isStatus(),
-                        'like' => $this->myFunction->isLike_Produit($produit->getId()),
-                        'islike' =>   $user == null ? false : $this->myFunction->userlikeProduit($produit->getId(), $user),
-
-                        'date ' => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
-                        'negociable' => $produit->isNegociable(),
-                        'images' => $lsImgP
-                    ];
+                    array_push($listProduit, $produitF);
                 }
             }
 
@@ -996,6 +959,7 @@ class BoutiqueController extends AbstractController
                                             'prix' => $produit->getPrixUnitaire(),
                                             'quantite' => $pp->getQuantite(),
                                             'status' => $pp->isStatus() == 1 ? 'Vendu' : "En cours",
+                                            'boutique' => $produit->getBoutique()->getTitre(),
 
                                             'date' => date_format($commande->getDateCreated(), 'Y-m-d H:i'),
                                             'photo' => $lsImgP[0]
