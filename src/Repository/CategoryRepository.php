@@ -39,6 +39,16 @@ class CategoryRepository extends ServiceEntityRepository
         }
     }
 
+    public function findByTitre($searchTerm): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('LOWER(p.libelle) LIKE :searchTermLower')
+            ->orWhere('UPPER(p.libelle) LIKE :searchTermUpper')
+            ->setParameter('searchTermLower', '%' . strtolower($searchTerm) . '%')
+            ->setParameter('searchTermUpper', '%' . strtoupper($searchTerm) . '%')
+            ->getQuery()
+            ->getResult();
+    }
     //    /**
     //     * @return Category[] Returns an array of Category objects
     //     */

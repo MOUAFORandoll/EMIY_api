@@ -66,7 +66,7 @@ class GeneralController extends AbstractController
      */
     public function search(Request $request)
     {
-        $search = $request->get('key');
+        $search = $request->get('search');
         // if (empty($data['type']) || empty($data['search'])) {
         //     return new JsonResponse([
         //         'message' => 'Veuillez recharger la page et reessayer '
@@ -77,7 +77,7 @@ class GeneralController extends AbstractController
 
         /**   si type == 0 , on update la recharche de produit uniquement , 1 =>boutique, 2 =>categorie   , 3 =>shorts      tous ceci en faisant la pagination et sans toute fois toucher aux autres resultats*/
         $type = $request->get('type');
-        $page = $request->get('page');
+        $page = $request->get('page') ?? 1;
         if ($type != null && $page != null) {
             if ($type == 0) {
 
@@ -158,39 +158,23 @@ class GeneralController extends AbstractController
         $data = [];
 
 
-        $lProduit = $this->em->getRepository(Produit::class)->findAll();
-        if ($lProduit) {
-
-            $start = $page * 10;
-            $end =
-                count($lProduit) - $start > $start + 10 ? $start + 10 :
-                count($lProduit);
-
-            for ($i = $start; $i < $end; $i++) {
-                $produit = $lProduit[$i];
-
-                if (str_contains(
-
-                    strtolower(
-                        $produit->getTitre()
-                    ),
-                    strtolower($search)
-
-                )) {
+        $result = $this->em->getRepository(Produit::class)->findByTitre($search);
+        $lProduit = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
+        foreach ($lProduit as $produit) {
 
 
 
 
-                    $produitF =
-                        $this->myFunction->ProduitModel($produit, $user);
 
-                    array_push($data, $produitF);
-                }
-                // $listProduits = $serializer->serialize($lP, 'json');
-            }
-            return
-                $data;
+            $produitF =
+                $this->myFunction->ProduitModel($produit, $user);
+
+            array_push($data, $produitF);
+
+            // $listProduits = $serializer->serialize($lP, 'json');
         }
+        return
+            $data;
     }
 
     public function
@@ -199,82 +183,71 @@ class GeneralController extends AbstractController
         $data = [];
 
 
-        $lBoutique = $this->em->getRepository(Boutique::class)->findAll();
+        $result = $this->em->getRepository(Boutique::class)->findByTitre($search);
+        $lBoutique = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
 
-        if ($lBoutique) {
-
-            $start = $page * 10;
-            $end =
-                count($lBoutique) - $start > $start + 10 ? $start + 10 :
-                count($lBoutique);
-
-            for ($i = $start; $i < $end; $i++) {
-                $boutique = $lBoutique[$i];
+        foreach ($lBoutique as $boutique) {
 
 
 
 
-                if (
-                    str_contains(
-                        strtolower($boutique->getTitre()),
-                        strtolower($search)
-                    )
-                ) {
-
-                    if ($boutique->getUser()) {
-
-                        $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                        $limgB = [];
-
-                        foreach ($lBo as $bo) {
-                            $limgB[]
-                                = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-                        }
-                        if (empty($limgB)) {
-                            $limgB[]
-                                = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-                        }
-
-                        if ($boutique->getUser()) {
-                            $boutiqueU = [
-                                'codeBoutique' => $boutique->getCodeBoutique(),
-                                'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                                'description' => $boutique->getDescription() ?? "Aucune",
-                                'titre' => $boutique->getTitre() ?? "Aucun",
-                                'status' => $boutique->isStatus(),
-                                'note' => $this->myFunction->noteBoutique($boutique->getId()),
-                                'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
-                                'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                                'images' => $limgB,
-                                'localisation' => $boutique->getLocalisation() ? [
-                                    'ville' =>
-                                    $boutique->getLocalisation()->getVille(),
-
-                                    'longitude' =>
-                                    $boutique->getLocalisation()->getLongitude(),
-                                    'latitude' =>
-                                    $boutique->getLocalisation()->getLatitude(),
-                                ] : [
-                                    'ville' =>
-                                    'incertiane',
-
-                                    'longitude' =>
-                                    0.0,
-                                    'latitude' =>
-                                    0.0,
-                                ]
-                                // 'produits' => $listProduit,
 
 
-                            ];
-                            array_push($data, $boutiqueU);
-                        }
-                    }
+
+
+            if ($boutique->getUser()) {
+
+                $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $limgB = [];
+
+                foreach ($lBo as $bo) {
+                    $limgB[]
+                        = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                 }
-                // $listBoutiques = $serializer->serialize($lB, 'json');
+                if (empty($limgB)) {
+                    $limgB[]
+                        = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                }
+
+                if ($boutique->getUser()) {
+                    $boutiqueU = [
+                        'codeBoutique' => $boutique->getCodeBoutique(),
+                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                        'description' => $boutique->getDescription() ?? "Aucune",
+                        'titre' => $boutique->getTitre() ?? "Aucun",
+                        'status' => $boutique->isStatus(),
+                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
+                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                        'images' => $limgB,
+                        'localisation' => $boutique->getLocalisation() ? [
+                            'ville' =>
+                            $boutique->getLocalisation()->getVille(),
+
+                            'longitude' =>
+                            $boutique->getLocalisation()->getLongitude(),
+                            'latitude' =>
+                            $boutique->getLocalisation()->getLatitude(),
+                        ] : [
+                            'ville' =>
+                            'incertiane',
+
+                            'longitude' =>
+                            0.0,
+                            'latitude' =>
+                            0.0,
+                        ]
+                        // 'produits' => $listProduit,
 
 
+                    ];
+                    array_push($data, $boutiqueU);
+                }
             }
+
+            // $listBoutiques = $serializer->serialize($lB, 'json');
+
+
         }
         return
             $data;
@@ -284,40 +257,27 @@ class GeneralController extends AbstractController
     searchCategory($search, $user, $page)
     {
         $data = [];
-        $lCategory = $this->em->getRepository(Category::class)->findAll();
+        $result = $this->em->getRepository(Category::class)->findByTitre($search);
+        $lCategory = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
 
-        if ($lCategory) {
-
-            $start = $page * 10;
-            $end =
-                count($lCategory) - $start > $start + 10 ? $start + 10 :
-                count($lCategory);
-
-            for ($i = $start; $i < $end; $i++) {
-                $category = $lCategory[$i];
+        foreach ($lCategory as $category) {
 
 
-                if (
-                    str_contains(
-                        strtolower($category->getLibelle()),
-                        strtolower($search)
 
-                    )
-                ) {
-                    if ($category->isStatus()) {
-                        $categoryU =  [
-                            'id' => $category->getId(),
-                            'libelle' => $category->getLibelle(),
-                            'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
 
-                            'description' => $category->getDescription(),
-                            // 'titre' => $category->getTitre(), 
-                            'status' => $category->isStatus(),
 
-                        ];
-                        array_push($data, $categoryU);
-                    }
-                }
+            if ($category->isStatus()) {
+                $categoryU =  [
+                    'id' => $category->getId(),
+                    'libelle' => $category->getLibelle(),
+                    'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
+
+                    'description' => $category->getDescription(),
+                    // 'titre' => $category->getTitre(), 
+                    'status' => $category->isStatus(),
+
+                ];
+                array_push($data, $categoryU);
             }
         }
         return
@@ -329,88 +289,77 @@ class GeneralController extends AbstractController
     searchShort($search,  $user, $page)
     {
         $data = [];
-        $lShort = $this->em->getRepository(Short::class)->findAll();
+        $result = $this->em->getRepository(Short::class)->findByTitre($search);
+        $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
+
+        foreach ($lShort as $short) {
 
 
 
-        $start = $page * 10;
-        $end =
-            count($lShort) - $start > $start + 10 ? $start + 10 :
-            count($lShort);
+            $boutique = $short->getBoutique();
 
-        for ($i = $start; $i < $end; $i++) {
-            $short = $lShort[$i];
-            if (
-                str_contains(
-                    strtolower($short->getTitre()),
-                    strtolower($search)
+            if ($boutique) {
+                if ($boutique->isStatus()) {
+                    $shortF =     $this->myFunction->ShortModel($short, $user);
+                    //     $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                    //     $limgB = [];
 
-                )
-            ) {
-                $boutique = $short->getBoutique();
+                    //     foreach ($lBo  as $bo) {
+                    //         $limgB[]
+                    //             = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+                    //     }
+                    //     if (empty($limgB)) {
+                    //         $limgB[]
+                    //             = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                    //     }
+                    //     $boutiqueU =  [
+                    //         'codeBoutique' => $boutique->getCodeBoutique(),
+                    //         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                    //         'description' => $boutique->getDescription() ?? "Aucune",
+                    //         'titre' => $boutique->getTitre() ?? "Aucun",
+                    //         'status' => $boutique->isStatus(),
+                    //         'note' => $this->myFunction->noteBoutique($boutique->getId()),
 
-                if ($boutique) {
-                    if ($boutique->isStatus()) {
-                        $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                        $limgB = [];
+                    //         'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                    //         'images' => $limgB,
+                    //         'localisation' =>  $boutique->getLocalisation() ? [
+                    //             'ville' =>
+                    //             $boutique->getLocalisation()->getVille(),
 
-                        foreach ($lBo  as $bo) {
-                            $limgB[]
-                                = ['id' => $bo->getId(), 'src' =>  $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-                        }
-                        if (empty($limgB)) {
-                            $limgB[]
-                                = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-                        }
-                        $boutiqueU =  [
-                            'codeBoutique' => $boutique->getCodeBoutique(),
-                            'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                            'description' => $boutique->getDescription() ?? "Aucune",
-                            'titre' => $boutique->getTitre() ?? "Aucun",
-                            'status' => $boutique->isStatus(),
-                            'note' => $this->myFunction->noteBoutique($boutique->getId()),
+                    //             'longitude' =>
+                    //             $boutique->getLocalisation()->getLongitude(),
+                    //             'latitude' =>
+                    //             $boutique->getLocalisation()->getLatitude(),
+                    //         ] : [
+                    //             'ville' =>
+                    //             'incertiane',
 
-                            'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                            'images' => $limgB,
-                            'localisation' =>  $boutique->getLocalisation() ? [
-                                'ville' =>
-                                $boutique->getLocalisation()->getVille(),
-
-                                'longitude' =>
-                                $boutique->getLocalisation()->getLongitude(),
-                                'latitude' =>
-                                $boutique->getLocalisation()->getLatitude(),
-                            ] : [
-                                'ville' =>
-                                'incertiane',
-
-                                'longitude' =>
-                                0.0,
-                                'latitude' =>
-                                0.0,
-                            ]
-                        ];
+                    //             'longitude' =>
+                    //             0.0,
+                    //             'latitude' =>
+                    //             0.0,
+                    //         ]
+                    //     ];
 
 
-                        $shortF =  [
+                    //     $shortF =  [
 
-                            'id' => $short->getId(),
-                            'titre' => $short->getTitre() ?? "Aucun",
-                            'description' => $short->getDescription() ?? "Aucun",
-                            'status' => $short->isStatus(),
-                            'Preview' =>  $short->getPreview(),
-                            'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                            'src' =>  $short->getSrc(),
-                            'codeShort' =>
-                            $short->getCodeShort(), 'nbre_like' => count($this->myFunction->ListLikeShort($short)),
-                            'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
-                            'date' =>
-                            date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                            'boutique' =>  $boutiqueU
+                    //         'id' => $short->getId(),
+                    //         'titre' => $short->getTitre() ?? "Aucun",
+                    //         'description' => $short->getDescription() ?? "Aucun",
+                    //         'status' => $short->isStatus(),
+                    //         'Preview' =>  $short->getPreview(),
+                    //         'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+                    //         'src' =>  $short->getSrc(),
+                    //         'codeShort' =>
+                    //         $short->getCodeShort(), 'nbre_like' => count($this->myFunction->ListLikeShort($short)),
+                    //         'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
+                    //         'date' =>
+                    //         date_format($short->getDateCreated(), 'Y-m-d H:i'),
+                    //         'boutique' =>  $boutiqueU
 
-                        ];
-                        array_push($data, $shortF);
-                    }
+                    //     ];
+                    array_push($data, $shortF);
                 }
             }
         }

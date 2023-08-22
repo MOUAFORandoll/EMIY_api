@@ -39,6 +39,16 @@ class ShortRepository extends ServiceEntityRepository
         }
     }
 
+    public function findByTitre($searchTerm): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('LOWER(p.titre) LIKE :searchTermLower')
+            ->orWhere('UPPER(p.titre) LIKE :searchTermUpper')
+            ->setParameter('searchTermLower', '%' . strtolower($searchTerm) . '%')
+            ->setParameter('searchTermUpper', '%' . strtoupper($searchTerm) . '%')
+            ->getQuery()
+            ->getResult();
+    }
     //    /**
     //     * @return Short[] Returns an array of Short objects
     //     */
