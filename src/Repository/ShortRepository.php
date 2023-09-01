@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Short;
+use App\Entity\UserPlateform;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -46,6 +47,16 @@ class ShortRepository extends ServiceEntityRepository
             ->orWhere('UPPER(p.titre) LIKE :searchTermUpper')
             ->setParameter('searchTermLower', '%' . strtolower($searchTerm) . '%')
             ->setParameter('searchTermUpper', '%' . strtoupper($searchTerm) . '%')
+            ->getQuery()
+            ->getResult();
+    }
+    public function findShortsForSubscribedBoutiques(UserPlateform $user)
+    {
+        return
+            $this->createQueryBuilder('s')
+            ->join('s.boutique', 'b')
+            ->join('b.abonnementBoutiques', 'ab', 'WITH', 'ab.client = :userId AND ab.status = true')
+            ->setParameter('userId', $user->getId())
             ->getQuery()
             ->getResult();
     }

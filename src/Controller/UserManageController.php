@@ -182,14 +182,14 @@ class UserManageController extends AbstractController
         $this->em->persist($user);
         $this->em->flush();
 
-        // $infoUser = $this->createNewJWT($user);
-        // $tokenAndRefresh = json_decode($infoUser->getContent());
+        $infoUser = $this->createNewJWT($user);
+        $tokenAndRefresh = json_decode($infoUser->getContent());
 
-        // return new JsonResponse([
-        //     'message' => 'success',
-        //     'token' => $tokenAndRefresh->token,
-        //     'refreshToken' => $tokenAndRefresh->refreshToken,
-        // ], 200);
+        return new JsonResponse([
+            'message' => 'success',
+            'token' => $tokenAndRefresh->token,
+            'refreshToken' => $tokenAndRefresh->refreshToken,
+        ], 200);
     }
 
     public function getNewPssw(/* $id */)
@@ -255,41 +255,41 @@ class UserManageController extends AbstractController
         //     'refreshToken' => $tokenAndRefresh->refreshToken,
         // ], 200);
     }
-    // public function createNewJWT(UserPlateform $user)
-    // {
-    //     $token = $this->jwt->create($user);
+    public function createNewJWT(UserPlateform $user)
+    {
+        $token = $this->jwt->create($user);
 
-    //     $datetime = new \DateTime();
-    //     $datetime->modify('+2592000 seconds');
+        $datetime = new \DateTime();
+        $datetime->modify('+2592000 seconds');
 
-    //     $refreshToken = $this->jwtRefresh->create();
+        $refreshToken = $this->jwtRefresh->create();
 
-    //     $refreshToken->setUsername($user->getUsername());
-    //     $refreshToken->setRefreshToken();
-    //     $refreshToken->setValid($datetime);
+        $refreshToken->setUsername($user->getUsername());
+        $refreshToken->setRefreshToken();
+        $refreshToken->setValid($datetime);
 
-    //     // Validate, that the new token is a unique refresh token
-    //     $valid = false;
-    //     while (false === $valid) {
-    //         $valid = true;
-    //         $errors = $this->validator->validate($refreshToken);
-    //         if ($errors->count() > 0) {
-    //             foreach ($errors as $error) {
-    //                 if ('refreshToken' === $error->getPropertyPath()) {
-    //                     $valid = false;
-    //                     $refreshToken->setRefreshToken();
-    //                 }
-    //             }
-    //         }
-    //     }
+        // Validate, that the new token is a unique refresh token
+        $valid = false;
+        while (false === $valid) {
+            $valid = true;
+            $errors = $this->validator->validate($refreshToken);
+            if ($errors->count() > 0) {
+                foreach ($errors as $error) {
+                    if ('refreshToken' === $error->getPropertyPath()) {
+                        $valid = false;
+                        $refreshToken->setRefreshToken();
+                    }
+                }
+            }
+        }
 
-    //     $this->jwtRefresh->save($refreshToken);
+        $this->jwtRefresh->save($refreshToken);
 
-    //     return new JsonResponse([
-    //         'token' => $token,
-    //         'refreshToken' => $refreshToken->getRefreshToken()
-    //     ], 200);
-    // }
+        return new JsonResponse([
+            'token' => $token,
+            'refreshToken' => $refreshToken->getRefreshToken()
+        ], 200);
+    }
 
     /**
      * @Route("/desactivate/user", name="desactivateClient", methods={"PATCH"})

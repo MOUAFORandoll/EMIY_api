@@ -494,36 +494,41 @@ class BoutiqueController extends AbstractController
             ], 400);
         }
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
-        if ($user) {
+        if (!$user) {
+            return new JsonResponse([
+                'data'
+                => [],
+                'message' => 'Utilisateur introuvable'
+            ], 400);
+        }
 
+        $lBoutique = $this->em->getRepository(Boutique::class)->findBy(['user' => $user]);
+        $lB = [];
+        foreach ($lBoutique  as $boutique) {
+            if ($boutique->getUser()) {
 
-
-            $boutique = $this->em->getRepository(Boutique::class)->findOneBy(['user' => $user]);
-
-            if ($boutique) {
                 $listProduit = [];
-                foreach ($boutique->getProduits()  as $produit) {
+                foreach ($boutique->getProduits() as $produit) {
                     if ($produit->isStatus()) {
                         $produitF =
                             $this->myFunction->ProduitModel($produit, $user);
 
                         array_push($listProduit, $produitF);
-                           
                     }
                 }
 
-                $lBo = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+                $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                 $limgB = [];
 
-                foreach ($lBo  as $bo) {
+                foreach ($lBo as $bo) {
                     $limgB[]
                         = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
                 }
                 if (empty($limgB)) {
                     $limgB[]
-                        = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
+                        = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                 }
-                $boutique =  [
+                $boutiqueU = [
                     'codeBoutique' => $boutique->getCodeBoutique(),
                     'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                     'description' => $boutique->getDescription(),
@@ -554,33 +559,19 @@ class BoutiqueController extends AbstractController
 
 
                 ];
-                return
-                    new JsonResponse(
-                        [
-                            'exist' => true,
-                            'data'
-                            =>    $boutique
-
-                        ],
-                        200
-                    );
-            } else {
-                return
-                    new JsonResponse([
-                        'exist' => false,
-
-                        'data'
-                        => [],
-                        'message' => 'Aucune Boutique'
-                    ], 200);
+                array_push($lB, $boutiqueU);
             }
-        } else {
-            return new JsonResponse([
-                'data'
-                => [],
-                'message' => 'Utilisateur introuvable'
-            ], 400);
         }
+        return
+            new JsonResponse(
+                [
+                    'exist' => true,
+                    'data'
+                    =>    $lB
+
+                ],
+                200
+            );
     }
     /**
      * @Route("/boutique/read/info", name="boutiqueReadInfo", methods={"POST"})
@@ -632,7 +623,6 @@ class BoutiqueController extends AbstractController
                                 $this->myFunction->ProduitModel($produit, $admin);
 
                             array_push($listProduit, $produitF);
-                           
                         }
                     }
 

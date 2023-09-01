@@ -297,7 +297,7 @@ class AbonnementBoutiqueController extends AbstractController
         $client = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
 
-        $abonnementS = $this->em->getRepository(AbonnementBoutique::class)->findBy(['client' => $client]);
+        $abonnementS = $this->em->getRepository(AbonnementBoutique::class)->findBy(['client' => $client, 'status'=>1]);
         $nomnre = count($abonnementS);
         $lP = [];
         foreach ($abonnementS as $abonnement) {

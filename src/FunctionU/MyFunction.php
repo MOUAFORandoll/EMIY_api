@@ -1066,7 +1066,7 @@ class MyFunction
     }
 
 
-    public function ProduitModel(Produit $produit, UserPlateform $user)
+    public function ProduitModel(Produit $produit,   $user)
     {
 
         $lsImgP = [];
@@ -1089,6 +1089,8 @@ class MyFunction
             'quantite' => $produit->getQuantite(),
             'prix' => $produit->getPrixUnitaire(),
             'status' => $produit->isStatus(),
+            'date'
+            => date_format($produit->getDateCreated(), 'Y-m-d H:i'),
             'negociable' => $produit->isNegociable(),
             // 'promotion' => $produit->getListProduitPromotions()  ? end($produit->getListProduitPromotions())->getPrixPromotion() : 0,
             'images' => $lsImgP
@@ -1100,7 +1102,7 @@ class MyFunction
 
 
 
-    public function ShortModel(Short $short, UserPlateform $user)
+    public function ShortModel(Short $short,   $user)
     {
         $boutique = $short->getBoutique();
 
@@ -1168,7 +1170,7 @@ class MyFunction
         return $shortF;
     }
 
-    public function ProduitForShort(Short $short, UserPlateform $user)
+    public function ProduitForShort(Short $short,   $user)
     {
         $listProduits = [];
         $listproduitsShort = $short->getListProduitShorts();

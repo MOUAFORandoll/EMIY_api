@@ -65,7 +65,7 @@ class ShortController extends AbstractController
     }
 
     /**
-     * @Route("/short/read", name="ShortRead", methods={"GET"})
+     * @Route("/short/foryou/read", name="ShortForYouRead", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -80,7 +80,7 @@ class ShortController extends AbstractController
      * 
      * 
      */
-    public function ShortRead(Request $request)
+    public function ShortForYouRead(Request $request)
     {
 
 
@@ -124,6 +124,73 @@ class ShortController extends AbstractController
                 200
             );
     }
+
+
+    /**
+     * @Route("/short/suivis/read", name="ShortSuivisRead", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     * @param array $data doit contenir la  la keySecret du
+     * 
+     * 
+     */
+    public function ShortSuivisRead(Request $request)
+    {
+
+
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
+
+        $page =
+            $request->get('page') ?? 1;
+
+        $lShortF = [];
+
+
+
+
+        $shortSuivis =
+            $this->em->getRepository(Short::class)->findShortsForSubscribedBoutiques($user);
+        $result =
+            $this->filterShortForUserRead($shortSuivis,  $user);
+        $lShort = $this->paginator->paginate($result, $page, $this->myFunction::PAGINATION);
+        foreach ($lShort as $short) {
+
+
+            // $short->setCodeShort($this->myFunction->getUniqueNameShort());
+            // $this->em->persist($short);
+            // $this->em->flush();
+
+
+
+            $boutique = $short->getBoutique();
+
+            if ($boutique) {
+                if ($boutique->isStatus()) {
+
+                    $lShortF[] =     $this->myFunction->ShortModel($short, $user);
+                }
+            }
+        }
+
+
+        return
+            new JsonResponse(
+                [
+                    'data'
+                    =>  $lShortF,
+                ],
+                200
+            );
+    }
+
     public function filterShortForUserRead($shortList, $user)
     {
         // Créer deux tableaux pour stocker les vidéos lues et non lues

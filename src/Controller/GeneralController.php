@@ -585,7 +585,7 @@ class GeneralController extends AbstractController
 
 
 
-        $result = $this->em->getRepository(Category::class)->findAll();
+        $result = $this->em->getRepository(Category::class)->findBy(['status' => 1]);
         $lCategory = $this->paginator->paginate($result, 1, $this->myFunction::PAGINATION);
 
 
