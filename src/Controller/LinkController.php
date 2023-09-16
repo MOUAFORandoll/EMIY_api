@@ -197,6 +197,7 @@ class LinkController extends AbstractController
 
         $boutiqueU =  [
             'codeBoutique' => $boutique->getCodeBoutique(),
+            'nombre_produit' => count($boutique->getProduits()),
             'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
             'description' => $boutique->getDescription() ?? "Aucune",
             'titre' => $boutique->getTitre() ?? "Aucun",

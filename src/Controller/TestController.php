@@ -448,7 +448,7 @@ class TestController extends AbstractController
             );
     }
     /**
-     * @Route("/video", name="stream_video")
+     * @Route("/extract", name="stream_video")
      */
     public function streamVideo(Request $request,)
     {
@@ -457,16 +457,27 @@ class TestController extends AbstractController
         $filesShort  = scandir($sourceDirShort);
         foreach ($filesShort  as $file) {
             var_dump($file);
-            $this->extractImageFromVideoAction($file);
-            // if ($file != '.' && $file != '..')
-            //     $listVideoShort[] = $file;
+            if (!empty($file) && $file != '...' && $file != '.' && $file != '..') {
+
+
+                // $this->convertVideo($file);
+                $this->extractImageFromVideoAction($file);
+                // if ($file != '.' && $file != '..')
+                //     $listVideoShort[] = $file;
+            }
         }
+        // $lShort = $this->em->getRepository(Short::class)->findAll();
+        // foreach ($lShort  as $s) {
+        //     $s->setPreview(explode('.', $s->getSrc())[0] . '.jpg');
+        //     $this->em->persist($s);
+        // }
+        // $this->em->flush();
 
 
 
 
 
-        return new Response('Segment vidéo non trouvé', Response::HTTP_NOT_FOUND);
+        return new Response('Segment vidéo non trouvé', Response::HTTP_GONE);
     }
 
     public function extractImageFromVideoAction($o)
@@ -474,7 +485,7 @@ class TestController extends AbstractController
         $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;
         $imagePath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' . str_replace('mp4', 'jpg', $o);
 
-        // Exécute la commande FFmpeg
+
         $command = "ffmpeg -i $videoPath -ss 00:00:01 -vframes 1 $imagePath";
         exec($command);
 
@@ -491,6 +502,15 @@ class TestController extends AbstractController
         }
     }
 
+    public function convertVideo($o)
+    {
+        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;
+        $videoPathN = $this->getParameter('kernel.project_dir') .  '/public/videos/shortsN/' .  $o;   // Exécute la commande FFmpeg
+        $command = "ffmpeg -i $videoPath -c:v libx264 $videoPathN";
+        // $command    = "ffmpeg -i $videoPath -c:v libx264 -crf 23 -vf scale=-1:720 -c:a copy $videoPathN";
+        // $command = "ffmpeg -i $videoPath -ss 00:00:01 -vframes 1 $imagePath";
+        exec($command);
+    }
 
     function Convert($o)
     {

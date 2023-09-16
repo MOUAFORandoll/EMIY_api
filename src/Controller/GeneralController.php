@@ -211,7 +211,8 @@ class GeneralController extends AbstractController
 
                 if ($boutique->getUser()) {
                     $boutiqueU = [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
+                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
                         'titre' => $boutique->getTitre() ?? "Aucun",
@@ -313,7 +314,8 @@ class GeneralController extends AbstractController
                     //             = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     //     }
                     //     $boutiqueU =  [
-                    //         'codeBoutique' => $boutique->getCodeBoutique(),
+                    //          'codeBoutique' => $boutique->getCodeBoutique(),
+                     //   'nombre_produit' => count($boutique->getProduits()),
                     //         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                     //         'description' => $boutique->getDescription() ?? "Aucune",
                     //         'titre' => $boutique->getTitre() ?? "Aucun",
@@ -348,7 +350,7 @@ class GeneralController extends AbstractController
                     //         'titre' => $short->getTitre() ?? "Aucun",
                     //         'description' => $short->getDescription() ?? "Aucun",
                     //         'status' => $short->isStatus(),
-                    //         'Preview' =>  $short->getPreview(),
+                    //         'Preview' =>  $this->myFunction::BACK_END_URL . '/videos/shorts/' .  $short->getPreview(),
                     //         'is_like' =>   $user == null ? false : $this->myFunction->userlikeShort($short, $user),
                     //         'src' =>  $short->getSrc(),
                     //         'codeShort' =>
@@ -646,7 +648,8 @@ class GeneralController extends AbstractController
 
                 if ($boutique->getUser()) {
                     $boutiqueU = [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
+                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
                         'titre' => $boutique->getTitre() ?? "Aucun",

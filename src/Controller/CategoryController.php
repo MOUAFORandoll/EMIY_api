@@ -181,7 +181,9 @@ class CategoryController extends AbstractController
                             = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     }
                     $boutiqueU =  [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
+                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'nombre_produit' => count($boutique->getProduits()),
+                       
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
                         'titre' => $boutique->getTitre() ?? "Aucun",

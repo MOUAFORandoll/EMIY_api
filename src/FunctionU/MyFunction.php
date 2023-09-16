@@ -51,7 +51,7 @@ class MyFunction
 
     const
         BACK_END_URL =
-        'http://172.20.10.10:8000';
+        'http://192.168.43.187:8000';
     const
         PAGINATION = 14;
     public function __construct(
@@ -1102,6 +1102,73 @@ class MyFunction
 
 
 
+    public function boutiqueByIdModel($id,   $user)
+    {
+
+
+        $boutique = $this->em->getRepository(Boutique::class)->find($id);
+
+
+
+
+        if ($boutique->getUser()) {
+
+            $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
+            $limgB = [];
+
+            foreach ($lBo as $bo) {
+                $limgB[]
+                    = ['id' => $bo->getId(), 'src' => $this::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
+            }
+            if (empty($limgB)) {
+                $limgB[]
+                    = ['id' => 0, 'src' => $this::BACK_END_URL . '/images/default/boutique.png'];
+            }
+
+            if ($boutique->getUser()) {
+                $boutiqueU = [
+                    'codeBoutique' => $boutique->getCodeBoutique(),
+                    'nombre_produit' => count($boutique->getProduits()),
+                    'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
+                    'description' => $boutique->getDescription() ?? "Aucune",
+                    'titre' => $boutique->getTitre() ?? "Aucun",
+                    'status' => $boutique->isStatus(),
+                    'note' => $this->noteBoutique($boutique->getId()),
+                    'status_abonnement' => $this->userabonnementBoutique($boutique, $user),
+                    'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
+                    'images' => $limgB,
+                    'localisation' => $boutique->getLocalisation() ? [
+                        'ville' =>
+                        $boutique->getLocalisation()->getVille(),
+
+                        'longitude' =>
+                        $boutique->getLocalisation()->getLongitude(),
+                        'latitude' =>
+                        $boutique->getLocalisation()->getLatitude(),
+                    ] : [
+                        'ville' =>
+                        'incertiane',
+
+                        'longitude' =>
+                        0.0,
+                        'latitude' =>
+                        0.0,
+                    ]
+                    // 'produits' => $listProduit,
+
+
+                ];
+            }
+        }
+
+        // $listBoutiques = $serializer->serialize($lB, 'json');
+
+
+
+        return
+            $boutiqueU;
+    }
+
     public function ShortModel(Short $short,   $user)
     {
         $boutique = $short->getBoutique();
@@ -1119,6 +1186,7 @@ class MyFunction
         }
         $boutiqueU =  [
             'codeBoutique' => $boutique->getCodeBoutique(),
+            'nombre_produit' => count($boutique->getProduits()),
             'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
             'description' => $boutique->getDescription() ?? "Aucune",
             'titre' => $boutique->getTitre() ?? "Aucun",
@@ -1153,7 +1221,7 @@ class MyFunction
             'titre' => $short->getTitre() ?? "Aucun",
             'description' => $short->getDescription() ?? "Aucun",
             'status' => $short->isStatus(),
-            'Preview' =>  $short->getPreview(),
+            'preview' => $this::BACK_END_URL . '/videos/shorts/' .   $short->getPreview(),
             'is_like' =>   $user == null ? false : $this->userlikeShort($short, $user),
             'src' =>  $short->getSrc(),
             'codeShort' =>

@@ -76,7 +76,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(["create:user", "read:user"])]
     private $prenom;
 
-    #[ORM\Column(type: "string", length: 255)]
+    #[ORM\Column(type: "string", length: 255, nullable: true)]
     #[Groups(["create:user", "read:user"])]
     private $email;
 

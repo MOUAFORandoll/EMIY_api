@@ -109,7 +109,7 @@ class AbonnementBoutiqueController extends AbstractController
         return new JsonResponse([
             'message' => 'Success',
             'status' => true,
-            'id' =>  $boutique->getId()
+            'codeBoutique' =>  $boutique->getCodeBoutique()
 
         ], 200);
     }
@@ -179,6 +179,7 @@ class AbonnementBoutiqueController extends AbstractController
                 if ($boutique->getUser()) {
                     $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
                         'titre' => $boutique->getTitre() ?? "Aucun",
@@ -297,7 +298,7 @@ class AbonnementBoutiqueController extends AbstractController
         $client = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
 
-        $abonnementS = $this->em->getRepository(AbonnementBoutique::class)->findBy(['client' => $client, 'status'=>1]);
+        $abonnementS = $this->em->getRepository(AbonnementBoutique::class)->findBy(['client' => $client, 'status' => 1]);
         $nomnre = count($abonnementS);
         $lP = [];
         foreach ($abonnementS as $abonnement) {
@@ -312,7 +313,7 @@ class AbonnementBoutiqueController extends AbstractController
                 # code... 
 
                 if ($produit->isStatus() && $produit->getQuantite() > 0) {
-                    
+
 
 
                     $produitF =

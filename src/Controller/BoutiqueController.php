@@ -410,6 +410,7 @@ class BoutiqueController extends AbstractController
                     if ($boutique->getUser()) {
                         $boutiqueU =  [
                             'codeBoutique' => $boutique->getCodeBoutique(),
+                            'nombre_produit' => count($boutique->getProduits()),
                             'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                             'description' => $boutique->getDescription() ?? "Aucune",
                             'titre' => $boutique->getTitre() ?? "Aucun",
@@ -530,6 +531,7 @@ class BoutiqueController extends AbstractController
                 }
                 $boutiqueU = [
                     'codeBoutique' => $boutique->getCodeBoutique(),
+                    'nombre_produit' => count($boutique->getProduits()),
                     'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                     'description' => $boutique->getDescription(),
                     'titre' => $boutique->getTitre(),
@@ -640,6 +642,7 @@ class BoutiqueController extends AbstractController
                     $commande = $this->comandeReadH($data['codeBoutique']);
                     $boutique =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription(),
                         'titre' => $boutique->getTitre(),

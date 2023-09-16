@@ -39,6 +39,7 @@ use Knp\Component\Pager\PaginatorInterface;
 use App\Entity\UserReadShort;
 use App\Entity\ListProduitShort;
 use App\Entity\Produit;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ShortController extends AbstractController
 {
@@ -365,6 +366,7 @@ class ShortController extends AbstractController
             }
             $boutiqueU = [
                 'codeBoutique' => $boutique->getCodeBoutique(),
+                'nombre_produit' => count($boutique->getProduits()),
                 'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                 'description' => $boutique->getDescription() ?? "Aucune",
                 'titre' => $boutique->getTitre() ?? "Aucun",
@@ -392,22 +394,23 @@ class ShortController extends AbstractController
                 ]
             ];
 
-            $shortF = [
+            // $shortF = [
 
-                'id' => $short->getId(),
-                'titre' => $short->getTitre() ?? "Aucun",
-                'description' => $short->getDescription() ?? "Aucun",
-                'status' => $short->isStatus(),
-                'Preview' => $short->getPreview(),
-                'src' => $short->getSrc(),
-                'is_like' => $user == null ? false : $this->myFunction->userlikeShort($short, $user),
-                'nbre_like' => count($this->myFunction->ListLikeShort($short)),
-                'codeShort' =>
-                $short->getCodeShort(),     'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
-                'date' =>
-                date_format($short->getDateCreated(), 'Y-m-d H:i'),
-                'boutique' => $boutiqueU
-            ];
+            //     'id' => $short->getId(),
+            //     'titre' => $short->getTitre() ?? "Aucun",
+            //     'description' => $short->getDescription() ?? "Aucun",
+            //     'status' => $short->isStatus(),
+            //     'Preview' => $this->myFunction::BACK_END_URL . '/videos/produits/' . $short->getPreview(),
+            //     'src' => $short->getSrc(),
+            //     'is_like' => $user == null ? false : $this->myFunction->userlikeShort($short, $user),
+            //     'nbre_like' => count($this->myFunction->ListLikeShort($short)),
+            //     'codeShort' =>
+            //     $short->getCodeShort(),     'nbre_commentaire' => count($this->myFunction->ListCommentShort($short)),
+            //     'date' =>
+            //     date_format($short->getDateCreated(), 'Y-m-d H:i'),
+            //     'boutique' => $boutiqueU
+            // ];
+            $shortF =     $this->myFunction->ShortModel($short, $user);
 
             return new JsonResponse([
                 'message' => 'Like ajoute.',
@@ -878,7 +881,7 @@ class ShortController extends AbstractController
         $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['keySecret' => $request->get('keySecret')]);
 
         $page =
-            $request->get('page');
+            $request->get('page') ?? 1;
 
         // $keySecret = $data['keySecret'];
         $codeBoutique =
@@ -980,8 +983,6 @@ class ShortController extends AbstractController
         // try {
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
-        $possible = false;
-
 
 
 
@@ -998,12 +999,14 @@ class ShortController extends AbstractController
             empty($data['titre']) || empty($data['description'])
 
 
-            || empty($data['codeBoutique'])
+            || empty($data['codeBoutique'])   || empty($data['produits'])
         ) {
             return new JsonResponse(
                 [
                     'message' => 'Verifier votre requette',
-                    // 'data'=> $data
+                    'data' =>
+                    $request->request->all(),
+                    'd' => phpinfo()
                 ],
                 400
             );
@@ -1018,7 +1021,7 @@ class ShortController extends AbstractController
 
         $file = $request->files->get('file');
 
-        // dd($file);
+
 
         if (!$file ||   !$boutique) {
 
@@ -1030,6 +1033,9 @@ class ShortController extends AbstractController
                 400
             );
         }
+        $destinationDirectory = $this->getParameter('shorts_object');
+
+
 
         $nameFile
             = $this->myFunction->getUniqueNameShort();
@@ -1037,22 +1043,29 @@ class ShortController extends AbstractController
         $originalFilenameData = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         // this is needed to safely include the file name as part of the URL
         $safeFilenameData = $slugger->slug($originalFilenameData);
-        $newFilenameData =
-            $nameFile . '.' . $file->guessExtension();
 
+        $newFilenameData =
+            $nameFile . '.' . explode('.', $file->getClientOriginalName())[1];   /* $file->guessExtension() */;
+        // 
         // Move the file to the directory where brochures are stored
         try {
-
+            // dd($file->isValid());
             $file->move(
-                $this->getParameter('shorts_object'),
+                $destinationDirectory,
                 $newFilenameData
             );
+
+            $this->convertVideo(
+                $destinationDirectory  . '/' .
+                    $newFilenameData,
+            );
             $this->extractImageFromVideoAction(
-                $this->getParameter('shorts_object') . '/' .
+                $destinationDirectory  . '/' .
                     $newFilenameData,
 
-                $this->getParameter('shorts_object') . '/' .    $nameFile . '.jpg'
+                $destinationDirectory  . '/' .    $nameFile . '.jpg'
             );
+
             $short = new Short();
             $short->setSrc($newFilenameData);
             $short->setPreview($nameFile . '.jpg');
@@ -1105,6 +1118,15 @@ class ShortController extends AbstractController
         // }
     }
 
+    public function convertVideo($o)
+    {
+        $videoPath = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;
+        $videoPathN = $this->getParameter('kernel.project_dir') .  '/public/videos/shorts/' .  $o;   // Exécute la commande FFmpeg
+        $command = "ffmpeg -i $videoPath -c:v libx264 $videoPathN";
+        // $command    = "ffmpeg -i $videoPath -c:v libx264 -crf 23 -vf scale=-1:720 -c:a copy $videoPathN";
+        // $command = "ffmpeg -i $videoPath -ss 00:00:01 -vframes 1 $imagePath";
+        exec($command);
+    }
     public function extractImageFromVideoAction($videoPath, $imagePath)
     {
 

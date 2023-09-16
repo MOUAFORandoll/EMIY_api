@@ -3,7 +3,7 @@ import { createReadStream, stat } from "fs";
 import { extname, resolve } from "path";
 import { promisify } from "util";
 const app = new Koa();
-
+var listStart = [];
 let retryCount = 0;
 app.use(async ({ request, response }, next) => {
     console.log(!request.url.startsWith('/api/video'));
@@ -20,15 +20,23 @@ app.use(async ({ request, response }, next) => {
             console.log(video);
             const range = request.header.range
             if (!range) {
+
+                console.log('--------------------------typ0');
+
                 response.type = extname(video);
                 response.body = createReadStream(video)
                 return next();
             }
+            console.log('--------------------------typ1');
+
             const videoStat = await promisify(stat)(video);
             const videoSize = videoStat.size
             const CHUNK_SIZE = 10 ** 6;
             const start = Number(range.replace(/\D/g, ""));
+
             const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+            listStart.push([start, end])
+            // start = start < end ? start : 0;
             const contentLength = end - start + 1;
             response.set('Content-Range', `bytes ${start}-${end}/${videoSize}`)
             response.set('Accept-Range', `bytes`)
@@ -36,7 +44,7 @@ app.use(async ({ request, response }, next) => {
             response.status = 206
             response.body = createReadStream(video, { start, end })
 
-            console.log(start, end)
+            console.log(listStart)
         } catch (error) {
             if (error.code === "ECONNRESET" && retryCount < 5) { // Essayer de se reconnecter jusqu'à 5 fois
                 retryCount++;
