@@ -983,9 +983,6 @@ class ShortController extends AbstractController
         // try {
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
 
-
-
-
         $data = [
 
             'titre' => $request->get('titre'),

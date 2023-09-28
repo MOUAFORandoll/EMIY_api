@@ -39,6 +39,27 @@ class GeneralController extends AbstractController
     private   $serializer;
     private $clientWeb;
     private $paginator;
+    const libelle_home_component = [
+
+        [
+
+            'id' => 1,
+            'titre' => 'Best Seller',
+
+        ],
+        [
+
+            'id' => 2,
+            'titre' => 'Promotions',
+
+        ], [
+
+            'id' => 3,
+            'titre' => 'Recommande',
+
+        ]
+
+    ];
 
     private $myFunction;
     public function __construct(
@@ -211,7 +232,7 @@ class GeneralController extends AbstractController
 
                 if ($boutique->getUser()) {
                     $boutiqueU = [
-                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'codeBoutique' => $boutique->getCodeBoutique(),
                         'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
@@ -315,7 +336,7 @@ class GeneralController extends AbstractController
                     //     }
                     //     $boutiqueU =  [
                     //          'codeBoutique' => $boutique->getCodeBoutique(),
-                     //   'nombre_produit' => count($boutique->getProduits()),
+                    //   'nombre_produit' => count($boutique->getProduits()),
                     //         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                     //         'description' => $boutique->getDescription() ?? "Aucune",
                     //         'titre' => $boutique->getTitre() ?? "Aucun",
@@ -528,6 +549,7 @@ class GeneralController extends AbstractController
         $Produit = $this->getHomeProduct($user);
         $Categorie = $this->getHomeCategory();
         $Boutique = $this->getHomeBoutique($user);
+        $homeComponent = $this->getHomeComponent($user);
 
 
         return
@@ -538,11 +560,56 @@ class GeneralController extends AbstractController
                 =>
                 $Produit, 'Boutique'
                 =>
-                $Boutique,
+                $Boutique, 'homeComponent'
+                =>
+                $homeComponent,
 
             ], 203);
     }
 
+    /**
+     * 
+     * 
+     * Ici on recupere les boutiques populaire du systeme
+     * 
+     * 
+     */
+    public function getHomeComponent($user)
+    {
+
+        // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
+
+
+        $data = [
+            [
+
+                'type' => 1,
+                'titre' => 'Best Seller',
+                'produits' => $this->getHomeProduct($user)
+
+            ],
+            [
+
+                'type' => 2,
+                'titre' => 'Promotions',
+
+                'produits' => $this->getHomeProduct($user)
+
+
+            ], [
+
+                'type' => 3,
+                'titre' => 'Recommande',
+
+                'produits' => $this->getHomeProduct($user)
+
+            ]
+        ];
+
+
+        return
+            $data;
+    }
     /**
      *  Ici  on recupere les produits populaires du home
      * 
@@ -648,7 +715,7 @@ class GeneralController extends AbstractController
 
                 if ($boutique->getUser()) {
                     $boutiqueU = [
-                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'codeBoutique' => $boutique->getCodeBoutique(),
                         'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",

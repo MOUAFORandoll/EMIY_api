@@ -127,6 +127,7 @@ class CommunicationController extends AbstractController
         foreach ($messagecommunication as   $value) {
 
             $messages[] = [
+                'id' => $value->getId(),
                 'message' => $value->getMessage(),
                 'emetteurId' =>       $value->getInitiateur()->getId(),
 

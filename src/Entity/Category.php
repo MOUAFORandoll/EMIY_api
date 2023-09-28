@@ -101,6 +101,22 @@ class Category
         return $this->boutiques;
     }
 
+    
+    public function countBoutique() 
+    {
+
+        $number = 0;
+        foreach ( $this->boutiques as  $value) {
+            if
+            ($value->isStatus()){
+
+                $number++;
+            }
+        }
+
+        return $number;
+       
+    }
     public function addBoutique(Boutique $boutique): self
     {
         if (!$this->boutiques->contains($boutique)) {
@@ -135,3 +151,4 @@ class Category
         return $this;
     }
 }
+ 

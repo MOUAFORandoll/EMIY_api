@@ -84,8 +84,6 @@ class CategoryController extends AbstractController
     public function categoryRead(Request $request)
     {
 
-        $possible = false;
-
 
 
 
@@ -104,6 +102,7 @@ class CategoryController extends AbstractController
                         'description' => $category->getDescription(),
                         // 'titre' => $category->getTitre(), 
                         'status' => $category->isStatus(),
+                        'nombreBoutique' =>  $category->countBoutique()
 
                     ];
                     array_push($lC, $categoryU);
@@ -181,9 +180,9 @@ class CategoryController extends AbstractController
                             = ['id' => 0, 'src' =>  $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
                     }
                     $boutiqueU =  [
-                         'codeBoutique' => $boutique->getCodeBoutique(),
+                        'codeBoutique' => $boutique->getCodeBoutique(),
                         'nombre_produit' => count($boutique->getProduits()),
-                       
+
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                         'description' => $boutique->getDescription() ?? "Aucune",
                         'titre' => $boutique->getTitre() ?? "Aucun",

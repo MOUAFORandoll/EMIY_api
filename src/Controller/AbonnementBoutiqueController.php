@@ -177,7 +177,7 @@ class AbonnementBoutiqueController extends AbstractController
                 }
 
                 if ($boutique->getUser()) {
-                    $boutiqueU =  [
+                    /*   $boutiqueU =  [
                         'codeBoutique' => $boutique->getCodeBoutique(),
                         'nombre_produit' => count($boutique->getProduits()),
                         'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
@@ -208,7 +208,9 @@ class AbonnementBoutiqueController extends AbstractController
                         // 'produits' => $listProduit,
 
 
-                    ];
+                    ]; */
+
+                    $boutiqueU =    $this->myFunction->boutiqueByIdModel($boutique->getId(), $user);
                     array_push($lAbonnement, $boutiqueU);
                 }
             }
