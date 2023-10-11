@@ -52,6 +52,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use FFMpeg\FFMpeg;
 
+use Stripe\Stripe;
+use Stripe\Charge;
+use Stripe\Token;
+
 class TestController extends AbstractController
 {
 
@@ -662,5 +666,45 @@ class TestController extends AbstractController
         }
 
         return $response;
+    }
+
+
+    /**
+     * @Route("/payementtest", name="ProcessPayment")
+     */
+    public function ProcessPayment(Request $request)
+    {
+        try {
+            Stripe::setApiKey('sk_test_51MprWdFGCxqI1QzHZR3w2uP5G7oLhl58hXt4MDHqCUjywE1bdCP5YC4aqr0VVHilCTYmY7qohQfH4SyzvMD6bqKP00mxclsFcy');
+
+            $token = Token::create([
+                'card' => [
+                    'number' => '4242424242424242',
+                    'exp_month' => 03,
+                    'exp_year' => 2026,
+                    'cvc' => '868',
+                ],
+            ]);
+            $charge = Charge::create([
+                'amount' => 1000,
+                // montant en centimes
+                'currency' => 'eur',
+                'source' => $token,
+                // token de carte de crédit généré par Stripe.js
+                'description' => 'Achat de produits',
+            ]);
+
+
+            return
+                new JsonResponse(
+                    [
+
+                        'data' =>  $charge
+                    ],
+                    200
+                );
+        } catch (Exception $e) {
+            $reponse = 0;
+        }
     }
 }
