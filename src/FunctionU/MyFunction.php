@@ -41,17 +41,17 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class MyFunction
 {
-    public $emetteur = 'admin@prikado.com';
+       public $emetteur = 'admin@prikado.com';
     public $host_serveur_socket;
 
     private $em;
     private $client;
     private
-        $token    = "sb.sX32rcaw0TdQopyWxXA0DwJTCOG0o2EA";
+        $token    = "pk.tfLODRBooIKOCisurizG7NZNNYCO6wcGry0PranjBocWGKLNKFET3OYnGbR01WF0ftNrooMC5Z9iH8GfQv2llWNkkFCy0zk2wGkHdl6RD4LmTc3bBg3iauC7FdFTK";
 
     const
         BACK_END_URL =
-        'http://192.168.43.187:8000';
+        'http://192.168.43.134:8000';
     const
         PAGINATION = 14;
     public function __construct(
