@@ -38,6 +38,17 @@ class UserPlateformRepository extends ServiceEntityRepository
             $this->serializerEntityManager()->flush();
         }
     }
+    public function findByUserTag($searchTerm): array
+    {
+        return $this->createQueryBuilder('u')
+            ->where('LOWER(u.user_tag) LIKE :searchTermLower')
+            ->orWhere('UPPER(u.user_tag) LIKE :searchTermUpper')
+            ->setParameter('searchTermLower', '%' . strtolower($searchTerm) . '%')
+            ->setParameter('searchTermUpper', '%' . strtoupper($searchTerm) . '%')
+            ->getQuery()
+            ->getResult();
+    }
+
 
     //    /**
     //     * @return User[] Returns an array of User objects

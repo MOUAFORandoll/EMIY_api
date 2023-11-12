@@ -5,12 +5,13 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node second.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@types/koa": "^2.13.6",
+    "express": "^4.18.2",
     "koa": "^2.14.2",
     "koa-range": "^0.3.0",
     "nodemon": "^2.0.22"

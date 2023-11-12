@@ -68,7 +68,7 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
             $ExU = $this->em->getRepository(UserPlateform::class)->findOneBy(['codeParrainage' => $User->getCodeParrainage()]);
             if (
                 $ExU
-              
+
             ) {
 
                 $this->parrain($ExU, $User);
@@ -77,6 +77,7 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
             $User->setCodeParrainage($this->generateCodeParainnage());
 
             $this->createCommunication($User);
+            $this->userCreatetag($User);
             $this->createCompte($User);
         }
     }
@@ -95,6 +96,36 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
         $this->em->persist($newCompte);
         $this->em->flush();    # code...
     }
+    public function
+    userCreatetag(UserPlateform $User)
+    {
+        $tag = $this->generateUserTag($User);
+        $User->setUserTag($tag);
+        $this->em->persist($User);
+
+        $this->em->flush();    # code...
+    }
+    public function generateUserTag(UserPlateform $User)
+
+    {
+
+
+        $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $max = mb_strlen($listeCar, '8bit') - 1;
+        $tag =
+            $User->getNom();
+        for ($i = 0; $i < 5; ++$i) {
+            $tag  .= $listeCar[random_int(0, $max)];
+        }
+        $ExistTag = $this->em->getRepository(UserPlateform::class)->findOneBy(['user_tag' => $tag]);
+        if ($ExistTag) {
+            return
+                $this->generateCodeParainnage();
+        } else {
+            return $tag;
+        }
+    }
+
     public function createCommunication($user)
     {
 

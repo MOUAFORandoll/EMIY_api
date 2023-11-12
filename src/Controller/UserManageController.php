@@ -955,4 +955,72 @@ class UserManageController extends AbstractController
                 200
             );
     }
+
+
+
+
+    // /**
+    //  * @Route("/user/tag", name="userTag", methods={"GET"})
+    //  * @param Request $request
+    //  * @return JsonResponse
+    //  */
+    // public function userTag(Request $request)
+    // {
+
+    //     $users = $this->em->getRepository(UserPlateform::class)->findAll();
+    //     foreach ($users  as $user) {
+    //         $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    //         $max = mb_strlen($listeCar, '8bit') - 1;
+    //         $base =
+    //             $user->getNom();
+    //         for ($i = 0; $i < 5; ++$i) {
+    //             $base  .= $listeCar[random_int(0, $max)];
+    //         }
+    //         $user->setUserTag($base);
+
+    //         $this->em->persist($user);
+    //     }
+    //     $this->em->flush();
+
+
+    //     return new JsonResponse([
+    //         'message' => 'success',
+
+    //     ], 200);
+    // }
+
+
+    /**
+     * @Route("/user/find", name="userFind", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function userFind(Request $request)
+    {
+
+        $users = [];
+        $tag =
+            $request->get('tag');
+        $usersR = $this->em->getRepository(UserPlateform::class)->findByUserTag($tag);
+        foreach ($usersR  as $user) {
+
+
+            $users[] = [
+                // 'id' => $user->getId(),
+                'user_tag' => $user->getUserTag(),
+                'nom' => $user->getNom() . ' ' . $user->getPrenom(),
+                'email' => $user->getEmail(), 'phone' => $user->getPhone(),
+
+                'profile' =>         count($user->getUserObjects())  == 0 ? '' : $this->myFunction->getBackendUrl() . '/images/users/' . $user->getUserObjects()->first()->getSrc(),
+
+
+            ];
+        }
+
+
+        return new JsonResponse([
+            'data' => $users,
+
+        ], 200);
+    }
 }

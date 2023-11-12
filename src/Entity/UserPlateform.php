@@ -21,6 +21,7 @@ use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\DateFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\ExistsFilter;
 use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\BooleanFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
+use App\FunctionU\MyFunction;
 
 
 #[ORM\Entity(repositoryClass: UserPlateformRepository::class)]
@@ -179,9 +180,12 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'client', targetEntity: UserReadShort::class)]
     private Collection $userReadShorts;
 
-
-    public function __construct()
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $user_tag = null;
+  
+    public function __construct( )
     {
+      
         $this->dateCreated = new \DateTime();
 
         $this->status = true;
@@ -206,6 +210,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
         $this->shortCommentLikes = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->notification_recepteur = new ArrayCollection();
+
         $this->userReadShorts = new ArrayCollection();
     }
 
@@ -229,6 +234,10 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     public function getPrenom(): ?string
     {
         return $this->prenom;
+    }
+    public function getProfile()
+    {
+    //     return count($this->getUserObjects())  == 0 ? '' : new MyFunction()->getBackendUrl() . '/images/users/' . $this->getUserObjects()->first()->getSrc();
     }
 
     public function setPrenom(string $prenom): self
@@ -1029,6 +1038,18 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
                 $userReadShorts->setClient(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getUserTag(): ?string
+    {
+        return $this->user_tag;
+    }
+
+    public function setUserTag(?string $user_tag): static
+    {
+        $this->user_tag = $user_tag;
 
         return $this;
     }

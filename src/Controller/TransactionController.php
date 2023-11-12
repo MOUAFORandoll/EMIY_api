@@ -83,7 +83,7 @@ class TransactionController extends AbstractController
 
     /**
      * 
-     * @Route("/transaction/read", name="transactionReadUser", methods={"POST"})
+     * @Route("/transaction/read", name="transactionReadUser", methods={"GET"})
      * @param Request $request
      * @return JsonResponse
      * @throws ClientExceptionInterface
@@ -102,13 +102,13 @@ class TransactionController extends AbstractController
     {
 
         // $typeCompte = $AccountEntityManager->getRepository(TypeCompte::class)->findOneBy(['id' => 1]);
-        $data = $request->toArray();
+        $id = $request->get('id');
         $possible = false;
 
 
 
 
-        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => $data['id']]);
+        $user = $this->em->getRepository(UserPlateform::class)->findOneBy(['id' => $id]);
         if (!$user) {
             return new JsonResponse([
                 'message' => 'Vous n\'etes pas un livreur, vous ne pouvez pas poursuivre l\'operation'

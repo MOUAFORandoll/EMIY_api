@@ -41,7 +41,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class MyFunction
 {
-       public $emetteur = 'admin@prikado.com';
+    public $emetteur = 'admin@prikado.com';
     public $host_serveur_socket;
 
     private $em;
@@ -66,6 +66,10 @@ class MyFunction
         $this->client =
             $client;
         $this->em = $em;
+    }
+    public function  getBackendUrl()
+    {
+        return $this::BACK_END_URL;
     }
     public function removeSpace(string $value)
     {

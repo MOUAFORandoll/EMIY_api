@@ -508,15 +508,15 @@ class BoutiqueController extends AbstractController
         foreach ($lBoutique  as $boutique) {
             if ($boutique->getUser()) {
 
-                $listProduit = [];
-                foreach ($boutique->getProduits() as $produit) {
-                    if ($produit->isStatus()) {
-                        $produitF =
-                            $this->myFunction->ProduitModel($produit, $user);
+                // $listProduit = [];
+                // foreach ($boutique->getProduits() as $produit) {
+                //     if ($produit->isStatus()) {
+                //         $produitF =
+                //             $this->myFunction->ProduitModel($produit, $user);
 
-                        array_push($listProduit, $produitF);
-                    }
-                }
+                //         array_push($listProduit, $produitF);
+                //     }
+                // }
 
                 $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                 $limgB = [];
@@ -538,7 +538,7 @@ class BoutiqueController extends AbstractController
                     'status' => $boutique->isStatus(),
 
                     'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                    'produits' => $listProduit,
+                    // 'produits' => $listProduit,
                     'images' => $limgB,
                     'localisation' =>
                     $boutique->getLocalisation() ? [

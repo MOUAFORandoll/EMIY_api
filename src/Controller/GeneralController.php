@@ -143,13 +143,17 @@ class GeneralController extends AbstractController
 
                 $short =   $this->searchShort($search, $user, $page);
 
-                return new JsonResponse([
+                return new JsonResponse(
+                    [
 
-                    'short' => $short,
-                    'type' => 3
+                        'short' => $short,
 
 
-                ], 200);
+
+                        'type' => 3
+                    ],
+                    200
+                );
             }
         }
 
@@ -218,58 +222,12 @@ class GeneralController extends AbstractController
 
             if ($boutique->getUser()) {
 
-                $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
-                $limgB = [];
 
-                foreach ($lBo as $bo) {
-                    $limgB[]
-                        = ['id' => $bo->getId(), 'src' => $this->myFunction::BACK_END_URL . '/images/boutiques/' . $bo->getSrc()];
-                }
-                if (empty($limgB)) {
-                    $limgB[]
-                        = ['id' => 0, 'src' => $this->myFunction::BACK_END_URL . '/images/default/boutique.png'];
-                }
+                $boutiqueU =
+                    $this->myFunction->boutiqueByIdModel($boutique->getId(), $user);
 
-                if ($boutique->getUser()) {
-                    $boutiqueU = [
-                        'codeBoutique' => $boutique->getCodeBoutique(),
-                        'nombre_produit' => count($boutique->getProduits()),
-                        'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
-                        'description' => $boutique->getDescription() ?? "Aucune",
-                        'titre' => $boutique->getTitre() ?? "Aucun",
-                        'status' => $boutique->isStatus(),
-                        'note' => $this->myFunction->noteBoutique($boutique->getId()),
-                        'status_abonnement' => $this->myFunction->userabonnementBoutique($boutique, $user),
-                        'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
-                        'images' => $limgB,
-                        'localisation' => $boutique->getLocalisation() ? [
-                            'ville' =>
-                            $boutique->getLocalisation()->getVille(),
-
-                            'longitude' =>
-                            $boutique->getLocalisation()->getLongitude(),
-                            'latitude' =>
-                            $boutique->getLocalisation()->getLatitude(),
-                        ] : [
-                            'ville' =>
-                            'incertiane',
-
-                            'longitude' =>
-                            0.0,
-                            'latitude' =>
-                            0.0,
-                        ]
-                        // 'produits' => $listProduit,
-
-
-                    ];
-                    array_push($data, $boutiqueU);
-                }
+                array_push($data, $boutiqueU);
             }
-
-            // $listBoutiques = $serializer->serialize($lB, 'json');
-
-
         }
         return
             $data;
@@ -293,7 +251,7 @@ class GeneralController extends AbstractController
                     'id' => $category->getId(),
                     'libelle' => $category->getLibelle(),
                     'logo' => $this->myFunction::BACK_END_URL . '/images/category/' . $category->getLogo(),
-
+                    'nombreBoutique' =>  $category->countBoutique(),
                     'description' => $category->getDescription(),
                     // 'titre' => $category->getTitre(), 
                     'status' => $category->isStatus(),
@@ -669,6 +627,7 @@ class GeneralController extends AbstractController
                 'description' => $category->getDescription(),
                 // 'titre' => $category->getTitre(), 
                 'status' => $category->isStatus(),
+                'nombreBoutique' =>  $category->countBoutique()
 
             ];
             array_push($data, $categoryU);
