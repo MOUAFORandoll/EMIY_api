@@ -39,6 +39,7 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 use App\FunctionU\MyFunction;
 
 use App\Entity\Connexion;
+use App\Entity\ListProduitPanier;
 use App\Entity\UserPlateform;
 use App\Entity\Localisation;
 use App\Entity\TypeUser;
@@ -103,7 +104,9 @@ class PointLivraisonController extends AbstractController
             empty($data['keySecret']) ||
             empty($data['libelle']) ||
             empty($data['ville']) ||
-            empty($data['quartier'])
+            empty($data['quartier']) ||
+            empty($data['longitude']) ||
+            empty($data['latitude'])
 
         ) {
             return new JsonResponse(
@@ -125,7 +128,9 @@ class PointLivraisonController extends AbstractController
             $point_livraison->setLibelle($data['libelle'])
                 ->setVille($data['ville'])
 
-                ->setQuartier($data['quartier']);
+                ->setQuartier($data['quartier'])
+                ->setLongitude($data['longitude'])
+                ->setLatitude($data['latitude']);
 
             $this->em->persist($point_livraison);
             $this->em->flush();
@@ -255,7 +260,9 @@ class PointLivraisonController extends AbstractController
                     'libelle' => $point_livraison->getLibelle(),
                     'ville' => $point_livraison->getVille(),
                     'quartier' => $point_livraison->getQuartier(),
-                    'image' =>   
+                    'longitude' => $point_livraison->getLongitude(),
+                    'latitude' => $point_livraison->getLatitude(),
+                    'image' =>
                     $this->myFunction::BACK_END_URL . '/images/point_livraison_object/' . $point_livraison->getImage()
                 ];
         }
@@ -291,14 +298,14 @@ class PointLivraisonController extends AbstractController
     {
 
 
-        $userUser = $this->em->getRepository(PointLivraison::class)->findAll();
-        if ($userUser) {
+        $listPoint = $this->em->getRepository(PointLivraison::class)->findAll();
+        if ($listPoint) {
 
 
 
 
             $datas =
-                $this->serializer->serialize(array_reverse($userUser), 'json');
+                $this->serializer->serialize(array_reverse($listPoint), 'json');
             return
                 new JsonResponse([
                     'data'
@@ -313,5 +320,33 @@ class PointLivraisonController extends AbstractController
                 'message' => 'Action impossible'
             ], 200);
         }
+    }
+
+    /**
+     * @Route("/point_livraison/set", name="setLivr", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws \Exception
+     * 
+     * 
+     */
+    public function setLivr(Request $request)
+    {
+
+
+        $point_livraisons = $this->em->getRepository(ListProduitPanier::class)->findListCommandeBoutique(11);
+
+        $this->em->flush();
+        return
+            new JsonResponse([
+                'data'
+                => $point_livraisons
+
+            ], 200);
     }
 }

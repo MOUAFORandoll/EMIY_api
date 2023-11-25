@@ -517,6 +517,8 @@ class BoutiqueController extends AbstractController
                 //         array_push($listProduit, $produitF);
                 //     }
                 // }
+                $listCommandes = $this->em->getRepository(ListProduitPanier::class)->findListCommandeBoutique($boutique->getId());
+
 
                 $lBo   = $this->em->getRepository(BoutiqueObject::class)->findBy(['boutique' => $boutique]);
                 $limgB = [];
@@ -531,12 +533,13 @@ class BoutiqueController extends AbstractController
                 }
                 $boutiqueU = [
                     'codeBoutique' => $boutique->getCodeBoutique(),
+                    'commandes' => count($boutique->getProduits()),
                     'nombre_produit' => count($boutique->getProduits()),
                     'user' => $boutique->getUser()->getNom() . ' ' . $boutique->getUser()->getPrenom(),
                     'description' => $boutique->getDescription(),
                     'titre' => $boutique->getTitre(),
                     'status' => $boutique->isStatus(),
-
+                    'commandes' => count($listCommandes),
                     'dateCreated' => date_format($boutique->getDateCreated(), 'Y-m-d H:i'),
                     // 'produits' => $listProduit,
                     'images' => $limgB,

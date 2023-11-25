@@ -38,6 +38,16 @@ class ListProduitPanierRepository extends ServiceEntityRepository
             $this->serializerEntityManager()->flush();
         }
     }
+    public function findListCommandeBoutique($idBoutique): array
+    {
+        return $this->createQueryBuilder('pp') // Utilisez 'pp' comme alias pour ListProduitPanier
+            ->join('pp.produit', 'p')        // Utilisez 'p' comme alias pour Produit
+            ->join('p.boutique', 'b')        // Utilisez 'b' comme alias pour Boutique
+            ->where('b.id = :idBoutique')
+            ->setParameter('idBoutique', $idBoutique)
+            ->getQuery()
+            ->getResult();
+    }
 
     //    /**
     //     * @return ListProduitPanier[] Returns an array of ListProduitPanier objects

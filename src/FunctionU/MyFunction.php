@@ -881,7 +881,15 @@ class MyFunction
                 $this->em->persist($notification);
                 $this->em->flush();
                 return  $notification;
+                //Utilisateur tague dans un message du commentaire
+            case 7:
+                $notification->setShortCommentaire($data['sujet']);
 
+
+                $notification->setRecepteur($data['user_by_tag']);
+                $this->em->persist($notification);
+                $this->em->flush();
+                return  $notification;
 
             default:
                 # code...
@@ -1024,6 +1032,26 @@ class MyFunction
                         //  'recepteur' =>  $notification->getMessageCommunication()->getCommunication()->getClient()->getKeySecret(),
 
                     ] : null;
+                // data de message communication
+
+            case 7:
+                return  [
+
+
+                    'id' => $notification->getId(),
+                    'date' => date_format($notification->getDateCreated(), 'Y-m-d H:i'),
+                    'read'   => $notification->isRead(),
+                    'title' => $notification->getTitle(),
+                    'description' => 'Vous avez ete mentionne',
+                    'type_notification' => 7,
+                    'profile' => $this::BACK_END_URL . '/images/users/' . $profile,
+
+                    'short' => $notification->getShortCommentaire()->getShort()->getId(),
+
+                    'recepteur' => $notification->getRecepteur()->getKeySecret()
+                    //  'recepteur' =>  $notification->getMessageCommunication()->getCommunication()->getClient()->getKeySecret(),
+
+                ];
 
             default:
                 # code...

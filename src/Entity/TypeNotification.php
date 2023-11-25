@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
  * 4=> 'Short Like Commentaire',
  *  5=>'Message negocaition',
  *  6=>'Message Communication Service client'
+ *  7=>'User tag in short'
  */
 #[ORM\Entity(repositoryClass: TypeNotificationRepository::class)]
 class TypeNotification

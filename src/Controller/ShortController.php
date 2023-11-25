@@ -501,9 +501,39 @@ class ShortController extends AbstractController
         ];
         $notification =   $this->myFunction->createNotification(3, $data);
         $notificationEmit =   $this->myFunction->modelNotification($notification);
-
-
         $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
+        // Modèle de regex pour rechercher des mentions d'utilisateur au format "@xxxxxx"
+        $pattern = '/@(\w+)/';
+
+        // Récupérer toutes les correspondances dans le message texte
+        preg_match_all($pattern, $comm, $matches);
+
+        // Récupérer les identifiants d'utilisateur (userPlatforme)
+        $listeIdentifiants = $matches[1];
+
+
+        // Afficher les identifiants d'utilisateur trouvés
+        foreach ($listeIdentifiants as $userPlatforme) {
+            $user_by_tag = $this->em->getRepository(UserPlateform::class)->findOneBy(['user_tag' => $userPlatforme]);
+            if ($user_by_tag) {
+
+                $data = [
+                    'title'
+                    =>   'Commentaire du Short',
+                    'description' => $user->getNom() . ' vous a mentionne dans un commentaire de Short',
+                    'user' => $user,
+                    'user_by_tag' => $user_by_tag,
+                    'sujet' =>  $comment,
+                ];
+                $notification =   $this->myFunction->createNotification(7, $data);
+                $notificationEmit =   $this->myFunction->modelNotification($notification);
+                $this->myFunction->Socekt_Emit('notifications', $notificationEmit);
+            }
+        }
+
+
+
+
         return new JsonResponse([
             'message' => 'Commentaire ajoute.',
             'commentaire' =>  $commentaire

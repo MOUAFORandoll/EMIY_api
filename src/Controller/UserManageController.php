@@ -108,7 +108,7 @@ class UserManageController extends AbstractController
         $userU = [
             'id' => $user->getId(),
             'nom' => $user->getNom(), 'prenom' => $user->getPrenom(),
-            'email' => $user->getEmail(), 'phone' => $user->getPhone(),
+            'email' => $user->getEmail() ?? '', 'phone' => $user->getPhone(),
             'status' => $user->isStatus(),
             'typeUser' => $user->getTypeUser()->getId(),
             'profile' => $this->myFunction::BACK_END_URL . '/images/users/' . $profile,
@@ -959,35 +959,42 @@ class UserManageController extends AbstractController
 
 
 
-    // /**
-    //  * @Route("/user/tag", name="userTag", methods={"GET"})
-    //  * @param Request $request
-    //  * @return JsonResponse
-    //  */
-    // public function userTag(Request $request)
-    // {
-
-    //     $users = $this->em->getRepository(UserPlateform::class)->findAll();
-    //     foreach ($users  as $user) {
-    //         $listeCar = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    //         $max = mb_strlen($listeCar, '8bit') - 1;
-    //         $base =
-    //             $user->getNom();
-    //         for ($i = 0; $i < 5; ++$i) {
-    //             $base  .= $listeCar[random_int(0, $max)];
-    //         }
-    //         $user->setUserTag($base);
-
-    //         $this->em->persist($user);
-    //     }
-    //     $this->em->flush();
+    /**
+     * @Route("/user/tag", name="userTag", methods={"GET"})
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function userTag(Request $request)
+    {
 
 
-    //     return new JsonResponse([
-    //         'message' => 'success',
+        // Votre message texte
+        $messageTexte = "Bonjour @utilisateur1, comment ça va? @utilisateur2, j'espère que tout va bien!";
 
-    //     ], 200);
-    // }
+        // Modèle de regex pour rechercher des mentions d'utilisateur au format "@xxxxxx"
+        $pattern = '/@(\w+)/';
+
+        // Récupérer toutes les correspondances dans le message texte
+        preg_match_all($pattern, $messageTexte, $matches);
+
+        // Récupérer les identifiants d'utilisateur (userPlatforme)
+        $userPlatformes = $matches[1];
+
+        // Mettre tous les identifiants dans une liste
+        $listeIdentifiants = $userPlatformes;
+
+        // Afficher les identifiants d'utilisateur trouvés
+        foreach ($listeIdentifiants as $userPlatforme) {
+            echo "Identifiant d'utilisateur trouvé : $userPlatforme\n";
+        }
+
+
+
+        return new JsonResponse([
+            'message' => $listeIdentifiants,
+
+        ], 200);
+    }
 
 
     /**
@@ -1001,6 +1008,8 @@ class UserManageController extends AbstractController
         $users = [];
         $tag =
             $request->get('tag');
+
+
         $usersR = $this->em->getRepository(UserPlateform::class)->findByUserTag($tag);
         foreach ($usersR  as $user) {
 

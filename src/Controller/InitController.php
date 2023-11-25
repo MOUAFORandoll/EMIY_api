@@ -217,7 +217,7 @@ class InitController extends AbstractController
     public function InitTypeNotification()
     {
 
-        $t = ['General', 'Short Like', 'Short Commentaire', 'Short Like Commentaire', 'Message negocaition', 'Message Communication Service client'];
+        $t = ['General', 'Short Like', 'Short Commentaire', 'Short Like Commentaire', 'Message negocaition', 'Message Communication Service client', 'User tag in short'];
         $data = $this->em->getRepository(TypeNotification::class)->findAll();
         if (
             count($data)

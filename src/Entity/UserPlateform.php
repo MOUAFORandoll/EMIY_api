@@ -181,11 +181,12 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $userReadShorts;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(["create:user", "read:user"])]
     private ?string $user_tag = null;
-  
-    public function __construct( )
+
+    public function __construct()
     {
-      
+
         $this->dateCreated = new \DateTime();
 
         $this->status = true;
@@ -237,7 +238,7 @@ class UserPlateform implements UserInterface, PasswordAuthenticatedUserInterface
     }
     public function getProfile()
     {
-    //     return count($this->getUserObjects())  == 0 ? '' : new MyFunction()->getBackendUrl() . '/images/users/' . $this->getUserObjects()->first()->getSrc();
+        //     return count($this->getUserObjects())  == 0 ? '' : new MyFunction()->getBackendUrl() . '/images/users/' . $this->getUserObjects()->first()->getSrc();
     }
 
     public function setPrenom(string $prenom): self

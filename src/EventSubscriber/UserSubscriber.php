@@ -77,7 +77,7 @@ final class UserSubscriber extends AbstractController implements EventSubscriber
             $User->setCodeParrainage($this->generateCodeParainnage());
 
             $this->createCommunication($User);
-            $this->userCreatetag($User);
+            // $this->userCreatetag($User);
             $this->createCompte($User);
         }
     }
